@@ -1,4 +1,6 @@
-# TaskBubble 🫧
+# TaskBubble <img src="taskbubble_app_icon.png" alt="TaskBubble App Icon" width="40">
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <img src="taskbubble_app_icon.png" alt="TaskBubble App Icon" width="250">
 
 **TaskBubble** is a simple and visually pleasing productivity app for macOS. I’ve been working on Task Bubble, a Swift-based productivity app that’s a passion project born from my desire to stay organized and manage my time, goals, and priorities more effectively (because who doesn’t need some extra support staying on top of tasks?). This desktop app integrates an AI chatbot designed to help users prioritize and streamline their to-do lists, making it easier to focus on what truly matters. Building this tool has deepened my appreciation for user-focused design and showcases my ability to merge AI with practical applications, demonstrating how NLP can simplify complex workflows and enhance usability.
 
@@ -15,6 +17,9 @@
   - Support for launching tasks directly in apps on the user’s computer.
   - Enhanced dark mode implementation.
 
+<img src="darkmode.png" alt="Dark Mode Screenshot" width="300">
+<img src="lightmode.png" alt="Light Mode Screenshot" width="300">
+
 ---
 
 ## 🔧 Technologies Used
@@ -22,12 +27,6 @@
 - **SwiftUI**: For building the macOS app interface.
 - **OpenAI Integration**: Planned for chatbot-driven task prioritization and organization.
 - **Xcode**: Development environment.
-
----
-
-## 🔍 Screenshots
-
-*(Add screenshots or GIFs of the app here to showcase its interface.)*
 
 ---
 
@@ -62,15 +61,6 @@ TaskBubble is currently in development. The following features and improvements 
 2. **Organize Tasks**: Future AI integration will help prioritize tasks.
 3. **Track Water Intake**: Click the water drop icon to log your hydration.
 4. **Complete Tasks**: Mark tasks as done and watch your progress grow!
-
----
-
-## 🔗 Contact
-
-Feel free to reach out with any questions or suggestions:
-
-- **GitHub**: [pandashaly](https://github.com/pandashaly)
-- **Email**: [your_email@example.com](mailto:your_email@example.com)
 
 ---
 
