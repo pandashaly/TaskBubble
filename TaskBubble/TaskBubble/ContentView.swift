@@ -161,7 +161,7 @@ struct TaskBubbleView: View {
                     
                     Text("\(waterIntake)/8 Glasses")
                         .font(.caption)
-                        .foregroundColor(isDarkMode ? .white : .black)
+                        .foregroundColor(isDarkMode ? .black : .white)
                 }
             }
             .padding()
