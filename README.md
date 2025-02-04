@@ -66,3 +66,7 @@ TaskBubble is currently in development. The following features and improvements 
 
 **TaskBubble**: Organize smarter. Stay productive. 💡
 
+
+<p align=center> <sub> TaskBubble created with 🫀 and 🧠 by <a href url="https://github.com/pandashaly/"> Shaly</a> &nbsp;&nbsp;&nbsp; ©2025 </sub> </p>
+
+
