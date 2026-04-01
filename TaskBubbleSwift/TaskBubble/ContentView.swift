@@ -6,6 +6,8 @@ struct ConfettiPiece: Identifiable {
     let id = UUID()
     var x: CGFloat
     var y: CGFloat
+    var vx: CGFloat
+    var vy: CGFloat
     var color: Color
     var size: CGFloat
     var rotation: Double
@@ -14,8 +16,9 @@ struct ConfettiPiece: Identifiable {
 
 struct ConfettiView: View {
     @Binding var isFinished: Bool
+    var origin: CGPoint
     @State private var pieces: [ConfettiPiece] = []
-    let timer = Timer.publish(every: 0.03, on: .main, in: .common).autoconnect()
+    let timer = Timer.publish(every: 0.02, on: .main, in: .common).autoconnect()
     
     var body: some View {
         ZStack {
@@ -28,18 +31,23 @@ struct ConfettiView: View {
                     .opacity(piece.opacity)
             }
         }
-        .onAppear { createConfetti() }
+        .onAppear { createCannonExplosion() }
         .onReceive(timer) { _ in updateConfetti() }
     }
     
-    private func createConfetti() {
-        let colors: [Color] = [.red, .blue, .green, .yellow, .pink, .purple, .orange]
+    private func createCannonExplosion() {
+        let colors: [Color] = [.red, .blue, .green, .yellow, .pink, .purple, .orange, .cyan, .mint]
         for _ in 0..<50 {
+            // Upward-focused explosion (cannon style)
+            let angle = Double.random(in: (-.pi * 0.75)...(-.pi * 0.25)) // Focus upward
+            let speed = Double.random(in: 4...12)
             pieces.append(ConfettiPiece(
-                x: CGFloat.random(in: 0...370),
-                y: CGFloat.random(in: -100...0),
+                x: origin.x,
+                y: origin.y,
+                vx: CGFloat(cos(angle) * speed),
+                vy: CGFloat(sin(angle) * speed),
                 color: colors.randomElement() ?? .blue,
-                size: CGFloat.random(in: 5...12),
+                size: CGFloat.random(in: 4...10),
                 rotation: Double.random(in: 0...360),
                 opacity: 1.0
             ))
@@ -48,12 +56,13 @@ struct ConfettiView: View {
     
     private func updateConfetti() {
         for i in 0..<pieces.count {
-            pieces[i].y += CGFloat.random(in: 5...10)
-            pieces[i].x += CGFloat.random(in: -2...2)
-            pieces[i].rotation += 10
-            pieces[i].opacity -= 0.01
+            pieces[i].x += pieces[i].vx
+            pieces[i].y += pieces[i].vy
+            pieces[i].vy += 0.25 // Stronger gravity for a more dynamic arc
+            pieces[i].rotation += 20
+            pieces[i].opacity -= 0.012
         }
-        pieces.removeAll { $0.opacity <= 0 || $0.y > 450 }
+        pieces.removeAll { $0.opacity <= 0 || $0.y > 450 || $0.x < 0 || $0.x > 370 }
         if pieces.isEmpty {
             isFinished = false
         }
@@ -70,14 +79,18 @@ struct ContentView: View {
         animation: .default)
     private var items: FetchedResults<Item>
     
+    @AppStorage("waterIntake") private var waterIntake: Int = 0
     @State private var currentView: AppView = .dashboard
     @State private var selectedCategory: TaskCategory? = nil
     @State private var showConfetti: Bool = false
+    @State private var confettiOrigin: CGPoint = .zero
     @State private var selectedTask: Item? = nil
+    @State private var sortOption: TaskSortOption = .timestamp
     
     // Task Input States
     @State private var newTaskTitle: String = ""
     @State private var inputCategory: TaskCategory = .daily
+    @State private var inputPriority: TaskPriority = .medium
     @State private var selectedDeadline: Date = Date()
     @State private var showDeadlinePicker: Bool = false
     @State private var showAppPicker: Bool = false
@@ -103,7 +116,7 @@ struct ContentView: View {
             }
             
             if showConfetti {
-                ConfettiView(isFinished: $showConfetti)
+                ConfettiView(isFinished: $showConfetti, origin: confettiOrigin)
                     .allowsHitTesting(false)
             }
         }
@@ -122,10 +135,45 @@ struct ContentView: View {
     // MARK: - Subviews
     
     private var dashboardView: some View {
-        VStack(spacing: 20) {
-            Text("Dashboard")
-                .font(.system(size: 24, weight: .bold, design: .rounded))
-                .padding(.top)
+        VStack(spacing: 15) {
+            HStack {
+                Image(systemName: "bubbles.and.sparkles.fill")
+                    .foregroundColor(.blue)
+                    .font(.title2)
+                Text("TaskBubble")
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+            }
+            .padding(.top)
+            
+            // Water Tracker
+            HStack {
+                Text("Water Intake")
+                    .font(.headline)
+                Spacer()
+                HStack(spacing: 4) {
+                    ForEach(0..<8) { index in
+                        Image(systemName: index < waterIntake ? "drop.fill" : "drop")
+                            .foregroundColor(.blue)
+                            .onTapGesture {
+                                if index == waterIntake {
+                                    waterIntake = min(waterIntake + 1, 8)
+                                } else if index < waterIntake {
+                                    waterIntake = index + 1
+                                }
+                            }
+                    }
+                }
+                Button(action: { waterIntake = 0 }) {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.caption)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(Color.blue.opacity(0.1))
+            .cornerRadius(12)
+            .padding(.horizontal)
             
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                 ForEach(TaskCategory.allCases) { category in
@@ -149,7 +197,7 @@ struct ContentView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding()
+            .padding(.horizontal)
             
             Spacer()
             
@@ -185,6 +233,18 @@ struct ContentView: View {
                 Spacer()
                 Text(selectedCategory?.rawValue ?? "").font(.headline)
                 Spacer()
+                Menu {
+                    Picker("Sort By", selection: $sortOption) {
+                        ForEach(TaskSortOption.allCases) { option in
+                            Text(option.rawValue).tag(option)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down").font(.headline)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                
                 Button(action: {
                     withAnimation {
                         currentView = .addTask
@@ -193,21 +253,25 @@ struct ContentView: View {
                     Image(systemName: "plus").font(.headline)
                 }
                 .buttonStyle(.plain)
+                .padding(.leading, 8)
             }
             .padding()
             .background((selectedCategory?.color ?? .blue).opacity(0.1))
             
             List {
-                let categoryTasks = items.filter { $0.category == selectedCategory?.rawValue }
+                let categoryTasks = sortedTasks(items.filter { $0.category == selectedCategory?.rawValue })
                 if categoryTasks.isEmpty {
                     Text("No tasks yet!").foregroundColor(.secondary).padding()
                 } else {
                     ForEach(categoryTasks) { item in
-                        TaskRow(item: item, onSelect: { selectedTask = item }, onComplete: {
-                            if !item.completed { showConfetti = true }
+                        TaskRow(item: item, onSelect: { selectedTask = item }, onComplete: { location in
+                            if !item.completed {
+                                confettiOrigin = location
+                                showConfetti = true
+                            }
                             item.completed.toggle()
                             saveContext()
-                        })
+                        }, appDetectionService: appDetectionService)
                     }
                     .onDelete { offsets in
                         offsets.map { categoryTasks[$0] }.forEach(viewContext.delete)
@@ -256,6 +320,16 @@ struct ContentView: View {
                         .pickerStyle(.segmented)
                     }
                     
+                    VStack(alignment: .leading) {
+                        Text("Priority").font(.caption).foregroundColor(.secondary)
+                        Picker("", selection: $inputPriority) {
+                            ForEach(TaskPriority.allCases) { priority in
+                                Text(priority.displayName).tag(priority)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    
                     Toggle(isOn: $showDeadlinePicker) {
                         Label("Add Deadline", systemImage: "calendar")
                     }
@@ -268,7 +342,10 @@ struct ContentView: View {
                     VStack(alignment: .leading) {
                         Text("Link Tool").font(.caption).foregroundColor(.secondary)
                         HStack {
-                            Button(action: { showAppPicker = true }) {
+                            Button(action: {
+                                appDetectionService.loadInstalledApplications()
+                                showAppPicker = true
+                            }) {
                                 Label("App", systemImage: "app.badge")
                                     .padding(8)
                                     .background(Color.gray.opacity(0.1))
@@ -302,17 +379,14 @@ struct ContentView: View {
     private func addTask() {
         guard !newTaskTitle.isEmpty else { return }
         
-        // Ensure Core Data operations happen on the main thread
         DispatchQueue.main.async {
             let newItem = Item(context: viewContext)
             newItem.timestamp = Date()
             newItem.title = newTaskTitle
             newItem.category = inputCategory.rawValue
+            newItem.priority = inputPriority.rawValue
             newItem.completed = false
             
-            // DEFENSIVE: Only set deadline if explicitly selected, otherwise leave as nil
-            // If your Core Data model marks 'deadline' as non-optional, this might crash.
-            // Ensure 'Optional' is checked for 'deadline' in TaskBubble.xcdatamodeld.
             if showDeadlinePicker {
                 newItem.deadline = selectedDeadline
             } else {
@@ -330,7 +404,6 @@ struct ContentView: View {
             
             saveContext()
             
-            // Reset and navigate back
             withAnimation {
                 newTaskTitle = ""
                 selectedApp = nil
@@ -342,13 +415,29 @@ struct ContentView: View {
         }
     }
     
+    private func sortedTasks(_ tasks: [Item]) -> [Item] {
+        switch sortOption {
+        case .alphabetical:
+            return tasks.sorted { ($0.title ?? "") < ($1.title ?? "") }
+        case .dueDate:
+            return tasks.sorted {
+                let d1 = $0.deadline ?? Date.distantFuture
+                let d2 = $1.deadline ?? Date.distantFuture
+                return d1 < d2
+            }
+        case .priority:
+            return tasks.sorted { $0.priority > $1.priority } // High priority first
+        case .timestamp:
+            return tasks.sorted { ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) }
+        }
+    }
+    
     private func saveContext() {
         do {
             try viewContext.save()
         } catch {
             let nsError = error as NSError
             print("Unresolved error \(nsError), \(nsError.userInfo)")
-            // If saving fails, delete the item to prevent a corrupt state
             viewContext.rollback()
         }
     }
@@ -368,44 +457,77 @@ struct ContentView: View {
 struct TaskRow: View {
     @ObservedObject var item: Item
     var onSelect: () -> Void
-    var onComplete: () -> Void
-    @StateObject private var appDetectionService = AppDetectionService()
+    var onComplete: (CGPoint) -> Void
+    @ObservedObject var appDetectionService: AppDetectionService
     
     var body: some View {
-        HStack {
-            Button(action: onComplete) {
-                Image(systemName: item.completed ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(item.completed ? .green : .gray)
-                    .font(.title3)
-            }
-            .buttonStyle(.plain)
-            
-            VStack(alignment: .leading) {
-                Text(item.title ?? "Untitled")
-                    .strikethrough(item.completed)
-                if let deadline = item.deadline {
-                    Text(deadline, style: .date).font(.caption2).foregroundColor(.secondary)
+        GeometryReader { geometry in
+            HStack {
+                Button(action: {
+                    let frame = geometry.frame(in: .global)
+                    let center = CGPoint(x: frame.minX + 20, y: frame.midY)
+                    onComplete(center)
+                }) {
+                    Image(systemName: item.completed ? "checkmark.circle.fill" : "circle")
+                        .foregroundColor(item.completed ? .green : .gray)
+                        .font(.title3)
                 }
-            }
-            
-            Spacer()
-            
-            if let type = item.linkedResourceType, let value = item.linkedResourceValue {
-                if type == LinkedResourceType.app.rawValue {
-                    if let icon = appDetectionService.getIcon(for: value) {
-                        Image(nsImage: icon).resizable().frame(width: 16, height: 16)
+                .buttonStyle(.plain)
+                
+                VStack(alignment: .leading) {
+                    HStack(spacing: 4) {
+                        if item.priority > 0 {
+                            Circle()
+                                .fill(priorityColor(for: item.priority))
+                                .frame(width: 6, height: 6)
+                        }
+                        Text(item.title ?? "Untitled")
+                            .strikethrough(item.completed)
                     }
-                } else {
-                    Image(systemName: "safari").font(.caption2).foregroundColor(.blue)
+                    if let deadline = item.deadline {
+                        Text(deadline, style: .date).font(.caption2).foregroundColor(.secondary)
+                    }
                 }
+                
+                Spacer()
+                
+                if let type = item.linkedResourceType, let value = item.linkedResourceValue {
+                    Button(action: {
+                        if type == LinkedResourceType.app.rawValue {
+                            appDetectionService.launchApp(bundleIdentifier: value)
+                        } else if let url = URL(string: value) {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }) {
+                        if type == LinkedResourceType.app.rawValue {
+                            if let icon = appDetectionService.getIcon(for: value) {
+                                Image(nsImage: icon).resizable().frame(width: 20, height: 20)
+                            }
+                        } else {
+                            Image(systemName: "safari").font(.caption).foregroundColor(.blue)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 4)
+                }
+                
+                Button(action: onSelect) {
+                    Image(systemName: "info.circle").font(.caption).foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
             }
-            
-            Button(action: onSelect) {
-                Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary)
-            }
-            .buttonStyle(.plain)
+            .padding(.vertical, 4)
         }
-        .padding(.vertical, 4)
+        .frame(height: 40)
+    }
+    
+    private func priorityColor(for priority: Int16) -> Color {
+        switch priority {
+        case 0: return .blue
+        case 1: return .orange
+        case 2: return .red
+        default: return .gray
+        }
     }
 }
 
@@ -419,14 +541,21 @@ struct AppPickerView: View {
         VStack {
             Text("Select an App").font(.headline).padding(.top)
             TextField("Search apps...", text: $searchText).textFieldStyle(RoundedBorderTextFieldStyle()).padding(.horizontal)
-            List(appDetectionService.installedApps.filter { searchText.isEmpty || $0.displayName.localizedCaseInsensitiveContains(searchText) }) { app in
-                HStack {
-                    Image(nsImage: app.icon).resizable().frame(width: 24, height: 24)
-                    Text(app.displayName)
-                    Spacer()
+            
+            if appDetectionService.isLoading {
+                Spacer()
+                ProgressView("Scanning apps...")
+                Spacer()
+            } else {
+                List(appDetectionService.installedApps.filter { searchText.isEmpty || $0.displayName.localizedCaseInsensitiveContains(searchText) }) { app in
+                    HStack {
+                        Image(nsImage: app.icon).resizable().frame(width: 24, height: 24)
+                        Text(app.displayName)
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture { selectedApp = app; isPresented = false }
                 }
-                .contentShape(Rectangle())
-                .onTapGesture { selectedApp = app; isPresented = false }
             }
             Button("Cancel") { isPresented = false }.padding()
         }

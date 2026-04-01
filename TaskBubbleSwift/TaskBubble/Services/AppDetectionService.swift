@@ -3,7 +3,7 @@ import AppKit
 import SwiftUI
 
 public struct DetectedApp: Identifiable, Hashable {
-    public let id: String // Bundle Identifier
+    public let id: String // Bundle Identifier or Path
     public let displayName: String
     public let icon: NSImage
     public let appURL: URL
@@ -28,35 +28,34 @@ public class AppDetectionService: ObservableObject {
         self.isLoading = true
         DispatchQueue.global(qos: .userInitiated).async {
             let workspace = NSWorkspace.shared
-            let applicationsURL = URL(fileURLWithPath: "/Applications")
             let fileManager = FileManager.default
             
             var detectedApps: [DetectedApp] = []
             
-            // Search /Applications and /System/Applications
-            let searchPaths = [applicationsURL, URL(fileURLWithPath: "/System/Applications")]
+            // Comprehensive list of application directories to scan
+            let searchPaths = [
+                URL(fileURLWithPath: "/Applications"),
+                URL(fileURLWithPath: "/System/Applications"),
+                URL.homeDirectory.appendingPathComponent("Applications"),
+                // Specific location for Safari Web Apps (macOS Sonoma and later)
+                URL.homeDirectory.appendingPathComponent("Applications/Web Apps"),
+                // Legacy or alternative Safari Web App locations
+                URL.homeDirectory.appendingPathComponent("Library/Containers/com.apple.Safari/Data/Library/WebApps")
+            ]
             
             for path in searchPaths {
-                if let enumerator = fileManager.enumerator(at: path, includingPropertiesForKeys: [.isApplicationKey], options: [.skipsPackageDescendants, .skipsHiddenFiles]) {
-                    for case let fileURL as URL in enumerator {
+                guard fileManager.fileExists(atPath: path.path) else { continue }
+                
+                // Use a shallow scan first for speed, then deeper if needed
+                if let contents = try? fileManager.contentsOfDirectory(at: path, includingPropertiesForKeys: [.isApplicationKey], options: [.skipsHiddenFiles]) {
+                    for fileURL in contents {
                         if fileURL.pathExtension == "app" {
-                            if let bundle = Bundle(url: fileURL),
-                               let bundleIdentifier = bundle.bundleIdentifier {
-                                
-                                let displayName = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? 
-                                                  bundle.object(forInfoDictionaryKey: "CFBundleName") as? String ?? 
-                                                  fileURL.deletingPathExtension().lastPathComponent
-                                
-                                let icon = workspace.icon(forFile: fileURL.path)
-                                
-                                // Basic filter for user-facing apps
-                                if !bundleIdentifier.starts(with: "com.apple.pkg.") {
-                                    detectedApps.append(DetectedApp(
-                                        id: bundleIdentifier,
-                                        displayName: displayName,
-                                        icon: icon,
-                                        appURL: fileURL
-                                    ))
+                            self.processAppBundle(at: fileURL, into: &detectedApps)
+                        } else if fileURL.hasDirectoryPath {
+                            // Shallow scan one level deeper for folders like "Web Apps"
+                            if let subContents = try? fileManager.contentsOfDirectory(at: fileURL, includingPropertiesForKeys: [.isApplicationKey], options: [.skipsHiddenFiles]) {
+                                for subURL in subContents where subURL.pathExtension == "app" {
+                                    self.processAppBundle(at: subURL, into: &detectedApps)
                                 }
                             }
                         }
@@ -65,18 +64,56 @@ public class AppDetectionService: ObservableObject {
             }
             
             DispatchQueue.main.async {
-                self.installedApps = detectedApps.sorted { $0.displayName.localizedCompare($1.displayName) == .orderedAscending }
+                // Remove duplicates based on bundle ID or path
+                var uniqueApps: [String: DetectedApp] = [:]
+                for app in detectedApps {
+                    uniqueApps[app.id] = app
+                }
+                
+                self.installedApps = Array(uniqueApps.values).sorted { $0.displayName.localizedCompare($1.displayName) == .orderedAscending }
                 self.isLoading = false
             }
         }
     }
     
+    private func processAppBundle(at fileURL: URL, into apps: inout [DetectedApp]) {
+        if let bundle = Bundle(url: fileURL) {
+            let bundleIdentifier = bundle.bundleIdentifier ?? fileURL.path
+            
+            let displayName = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ??
+                              bundle.object(forInfoDictionaryKey: "CFBundleName") as? String ??
+                              fileURL.deletingPathExtension().lastPathComponent
+            
+            let icon = NSWorkspace.shared.icon(forFile: fileURL.path)
+            
+            // Filter out system packages but keep user-facing apps and web apps
+            if !bundleIdentifier.starts(with: "com.apple.pkg.") {
+                apps.append(DetectedApp(
+                    id: bundleIdentifier,
+                    displayName: displayName,
+                    icon: icon,
+                    appURL: fileURL
+                ))
+            }
+        }
+    }
+    
     public func launchApp(bundleIdentifier: String) {
+        // Try launching by bundle identifier first
         if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
             let configuration = NSWorkspace.OpenConfiguration()
             NSWorkspace.shared.openApplication(at: appURL, configuration: configuration) { _, error in
                 if let error = error {
-                    print("Error launching app: \(error.localizedDescription)")
+                    print("Error launching app by ID: \(error.localizedDescription)")
+                }
+            }
+        } else if FileManager.default.fileExists(atPath: bundleIdentifier) {
+            // Fallback: Try launching by path (useful for some web apps)
+            let appURL = URL(fileURLWithPath: bundleIdentifier)
+            let configuration = NSWorkspace.OpenConfiguration()
+            NSWorkspace.shared.openApplication(at: appURL, configuration: configuration) { _, error in
+                if let error = error {
+                    print("Error launching app by path: \(error.localizedDescription)")
                 }
             }
         }
@@ -91,7 +128,10 @@ public class AppDetectionService: ObservableObject {
     public func getIcon(for bundleIdentifier: String) -> NSImage? {
         if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
             return NSWorkspace.shared.icon(forFile: appURL.path)
+        } else if FileManager.default.fileExists(atPath: bundleIdentifier) {
+            return NSWorkspace.shared.icon(forFile: bundleIdentifier)
         }
         return nil
     }
 }
+
