@@ -10,7 +10,7 @@ public struct PersistenceController {
             let newItem = Item(context: viewContext)
             newItem.timestamp = Date()
             newItem.title = "Sample Task \(i)"
-            newItem.category = TaskCategory.daily.rawValue
+            newItem.category = TaskCategory.today.rawValue
             newItem.completed = false
             newItem.deadline = Date()
         }

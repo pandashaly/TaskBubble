@@ -2,23 +2,42 @@ import Foundation
 import SwiftUI
 
 // MARK: - Task Category
-public enum TaskCategory: String, CaseIterable, Identifiable, Codable {
+
+public enum TaskCategory: String, CaseIterable, Identifiable {
+    case today = "Today"
     case goals = "Goals"
-    case daily = "Daily To-Do"
-    case weekly = "Weekly Tasks"
     case routine = "Routine"
+    case allTasks = "All Tasks"
     
-    public var id: String { self.rawValue }
+    public var id: String { rawValue }
+    
+    public var icon: String {
+        switch self {
+        case .today:
+            return "sun.max"
+        case .goals:
+            return "target"
+        case .routine:
+            return "repeat"
+        case .allTasks:
+            return "tray.full"
+        }
+    }
     
     public var color: Color {
         switch self {
-        case .goals: return Color("plilac")
-        case .daily: return Color("psage")
-        case .weekly: return Color("pblue")
-        case .routine: return Color("ppink")
+        case .today:
+            return .blue
+        case .goals:
+            return .green
+        case .routine:
+            return .orange
+        case .allTasks:
+            return .purple
         }
     }
 }
+
 
 // MARK: - Task Priority
 public enum TaskPriority: Int16, CaseIterable, Identifiable, Codable {

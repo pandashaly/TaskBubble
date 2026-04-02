@@ -89,7 +89,7 @@ struct ContentView: View {
     
     // Task Input States
     @State private var newTaskTitle: String = ""
-    @State private var inputCategory: TaskCategory = .daily
+    @State private var inputCategory: TaskCategory = .today
     @State private var inputPriority: TaskPriority = .medium
     @State private var selectedDeadline: Date = Date()
     @State private var showDeadlinePicker: Bool = false
@@ -371,14 +371,6 @@ struct ContentView: View {
         }
     }
     
-    private func categoryIcon(for category: TaskCategory) -> String {
-        switch category {
-        case .goals: return "target"
-        case .daily: return "sun.max"
-        case .weekly: return "calendar"
-        case .routine: return "repeat"
-        }
-    }
 }
 
 // MARK: - Supporting Views

@@ -4,7 +4,6 @@
 //
 //  Created by Shalyca Sottoriva on 02/04/2026.
 //
-
 import SwiftUI
 
 struct DashboardView: View {
@@ -14,41 +13,50 @@ struct DashboardView: View {
     var onAddTask: () -> Void
     
     var body: some View {
-        VStack(spacing: 15) {
+        VStack(spacing: 18) {
+            
+            // Top Header
             HStack {
                 Image(systemName: "bubbles.and.sparkles.fill")
-                    .foregroundColor(.blue)
+                    .foregroundColor(.white)
                     .font(.title2)
                 
                 Text("TaskBubble")
                     .font(.system(size: 24, weight: .bold, design: .rounded))
+                
+                Spacer()
             }
+            .padding(.horizontal)
             .padding(.top)
+            
+            // Horizontal Categories
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    ForEach(TaskCategory.allCases) { category in
+                        Button(action: {
+                            onCategoryTap(category)
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: category.icon)
+                                    .font(.caption)
+                                
+                                Text(category.rawValue)
+                                    .font(.system(size: 14))
+                                    .fontWeight(.bold)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(category.color.opacity(0.15))
+                            .cornerRadius(10)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal)
+            }
             
             // Water Tracker
             WaterTrackerView(waterIntake: $waterIntake)
-            
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                ForEach(TaskCategory.allCases) { category in
-                    Button(action: {
-                        onCategoryTap(category)
-                    }) {
-                        VStack {
-                            Image(systemName: categoryIcon(for: category))
-                                .font(.title)
-                            
-                            Text(category.rawValue)
-                                .font(.headline)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(category.color.opacity(0.2))
-                        .cornerRadius(12)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal)
             
             Spacer()
             
@@ -65,15 +73,6 @@ struct DashboardView: View {
             }
             .buttonStyle(.plain)
             .padding()
-        }
-    }
-    
-    private func categoryIcon(for category: TaskCategory) -> String {
-        switch category {
-        case .goals: return "target"
-        case .daily: return "sun.max"
-        case .weekly: return "calendar"
-        case .routine: return "repeat"
         }
     }
 }
