@@ -26,7 +26,7 @@ struct LinkIconView: View {
                     .padding(2)
             }
         }
-        .frame(width: 24, height: 24)
+        .frame(width: 17, height: 17)
         .task(id: link) {
             await loadFavicon()
         }

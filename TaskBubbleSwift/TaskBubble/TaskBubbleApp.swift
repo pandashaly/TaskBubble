@@ -6,15 +6,25 @@ struct TaskBubbleApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
-                .frame(width: 370, height: 450) // Original fixed size
+            mainContent
                 .onAppear {
                     window_size()
                 }
         }
         .windowStyle(.hiddenTitleBar) // Remove title bar for more space
         .windowResizability(.contentSize) // Keep it fixed to content size
+
+        MenuBarExtra("TaskBubble", systemImage: "checklist") {
+            mainContent
+        }
+        .menuBarExtraStyle(.window)
+    }
+
+    @ViewBuilder
+    private var mainContent: some View {
+        ContentView()
+            .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            .frame(width: 370, height: 450)
     }
 
     func window_size() {
@@ -26,3 +36,6 @@ struct TaskBubbleApp: App {
         }
     }
 }
+
+//added the app to the menu bar
+//TODO test/decide how the menubar button opens the app
