@@ -27,7 +27,7 @@ public class AppDetectionService: ObservableObject {
     public func loadInstalledApplications() {
         self.isLoading = true
         DispatchQueue.global(qos: .userInitiated).async {
-            let workspace = NSWorkspace.shared
+            //let workspace = NSWorkspace.shared
             let fileManager = FileManager.default
             
             var detectedApps: [DetectedApp] = []
