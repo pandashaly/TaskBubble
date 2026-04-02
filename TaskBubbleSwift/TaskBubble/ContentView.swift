@@ -340,7 +340,7 @@ struct TaskRow: View {
                     Button(action: {
                         if type == LinkedResourceType.app.rawValue {
                             appDetectionService.launchApp(bundleIdentifier: value)
-                        } else if let url = URL(string: value) {
+                        } else if let url = normalizedURL(from: value) {
                             NSWorkspace.shared.open(url)
                         }
                     }) {
@@ -349,7 +349,9 @@ struct TaskRow: View {
                                 Image(nsImage: icon).resizable().frame(width: 20, height: 20)
                             }
                         } else {
-                            Image(systemName: "safari").font(.caption).foregroundColor(.blue)
+                            LinkIconView(link: value)
+                                    .frame(width: 20, height: 20)
+                            //Image(systemName: "safari").font(.caption).foregroundColor(.blue)
                         }
                     }
                     .buttonStyle(.plain)
@@ -446,14 +448,17 @@ struct TaskDetailView: View {
             if let type = item.linkedResourceType, let value = item.linkedResourceValue {
                 Button(action: {
                     if type == LinkedResourceType.app.rawValue { appDetectionService.launchApp(bundleIdentifier: value) }
-                    else if let url = URL(string: value) { NSWorkspace.shared.open(url) }
+                    else if let url = normalizedURL(from: value) {
+                        NSWorkspace.shared.open(url)
+                    }
                 }) {
                     HStack {
                         if type == LinkedResourceType.app.rawValue {
                             if let icon = appDetectionService.getIcon(for: value) { Image(nsImage: icon).resizable().frame(width: 32, height: 32) }
                             Text("Open \(item.linkedResourceAppDisplayName ?? "App")")
                         } else {
-                            Image(systemName: "safari").font(.title)
+                            LinkIconView(link: value)
+                                        .frame(width: 32, height: 32)
                             Text("Open Link")
                         }
                     }

@@ -120,7 +120,7 @@ public class AppDetectionService: ObservableObject {
     }
     
     public func openURL(_ urlString: String) {
-        if let url = URL(string: urlString) {
+        if let url = normalizedURL(from: urlString) {
             NSWorkspace.shared.open(url)
         }
     }

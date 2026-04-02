@@ -124,7 +124,8 @@ struct AddTaskView: View {
                                     .resizable()
                                     .frame(width: 24, height: 24)
                             } else if !linkURL.isEmpty {
-                                Image(systemName: "safari")
+                                LinkIconView(link: linkURL)
+                                        .frame(width: 24, height: 24)
                             }
                         }
                     }
