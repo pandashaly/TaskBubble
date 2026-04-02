@@ -26,39 +26,7 @@ struct DashboardView: View {
             .padding(.top)
             
             // Water Tracker
-            HStack {
-                Text("Water Intake")
-                    .font(.headline)
-                
-                Spacer()
-                
-                HStack(spacing: 4) {
-                    ForEach(0..<8) { index in
-                        Image(systemName: index < waterIntake ? "drop.fill" : "drop")
-                            .foregroundColor(.blue)
-                            .onTapGesture {
-                                if index == waterIntake {
-                                    waterIntake = min(waterIntake + 1, 8)
-                                } else if index < waterIntake {
-                                    waterIntake = index + 1
-                                }
-                            }
-                    }
-                }
-                
-                Button(action: {
-                    waterIntake = 0
-                }) {
-                    Image(systemName: "arrow.counterclockwise")
-                        .font(.caption)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-            .background(Color.blue.opacity(0.1))
-            .cornerRadius(12)
-            .padding(.horizontal)
+            WaterTrackerView(waterIntake: $waterIntake)
             
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                 ForEach(TaskCategory.allCases) { category in
