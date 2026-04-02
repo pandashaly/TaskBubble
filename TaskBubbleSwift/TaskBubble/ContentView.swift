@@ -107,7 +107,20 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 switch currentView {
                 case .dashboard:
-                    dashboardView
+                    DashboardView(
+                        waterIntake: $waterIntake,
+                        onCategoryTap: { category in
+                            withAnimation {
+                                selectedCategory = category
+                                currentView = .categoryList
+                            }
+                        },
+                        onAddTask: {
+                            withAnimation {
+                                currentView = .addTask
+                            }
+                        }
+                    )
                 case .categoryList:
                     categoryListView
                 case .addTask:
@@ -134,90 +147,6 @@ struct ContentView: View {
     
     // MARK: - Subviews
     
-    private var dashboardView: some View {
-        VStack(spacing: 15) {
-            HStack {
-                Image(systemName: "bubbles.and.sparkles.fill")
-                    .foregroundColor(.blue)
-                    .font(.title2)
-                Text("TaskBubble")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-            }
-            .padding(.top)
-            
-            // Water Tracker
-            HStack {
-                Text("Water Intake")
-                    .font(.headline)
-                Spacer()
-                HStack(spacing: 4) {
-                    ForEach(0..<8) { index in
-                        Image(systemName: index < waterIntake ? "drop.fill" : "drop")
-                            .foregroundColor(.blue)
-                            .onTapGesture {
-                                if index == waterIntake {
-                                    waterIntake = min(waterIntake + 1, 8)
-                                } else if index < waterIntake {
-                                    waterIntake = index + 1
-                                }
-                            }
-                    }
-                }
-                Button(action: { waterIntake = 0 }) {
-                    Image(systemName: "arrow.counterclockwise")
-                        .font(.caption)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-            .background(Color.blue.opacity(0.1))
-            .cornerRadius(12)
-            .padding(.horizontal)
-            
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                ForEach(TaskCategory.allCases) { category in
-                    Button(action: {
-                        withAnimation {
-                            selectedCategory = category
-                            currentView = .categoryList
-                        }
-                    }) {
-                        VStack {
-                            Image(systemName: categoryIcon(for: category))
-                                .font(.title)
-                            Text(category.rawValue)
-                                .font(.headline)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(category.color.opacity(0.2))
-                        .cornerRadius(12)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal)
-            
-            Spacer()
-            
-            Button(action: {
-                withAnimation {
-                    currentView = .addTask
-                }
-            }) {
-                Label("Add New Task", systemImage: "plus.circle.fill")
-                    .font(.headline)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-            }
-            .buttonStyle(.plain)
-            .padding()
-        }
-    }
     
     private var categoryListView: some View {
         VStack(spacing: 0) {
