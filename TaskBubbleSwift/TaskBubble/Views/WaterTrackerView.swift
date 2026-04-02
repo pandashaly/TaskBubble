@@ -59,7 +59,7 @@ struct WaterTrackerView: View {
             .padding(.leading, 4)
         }
         .padding(.horizontal)
-        .padding(.vertical, 10)
+        .padding(.vertical, 8)
         .background(Color.blue.opacity(0.08))
         .cornerRadius(12)
         .padding(.horizontal)

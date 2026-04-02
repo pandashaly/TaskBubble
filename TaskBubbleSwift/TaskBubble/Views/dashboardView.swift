@@ -4,75 +4,96 @@
 //
 //  Created by Shalyca Sottoriva on 02/04/2026.
 //
+
+import CoreData
 import SwiftUI
 
 struct DashboardView: View {
     @Binding var waterIntake: Int
-    
+    let items: [Item]
+    @Binding var calendarScope: TaskCalendarScope
+    var onCalendarDay: (Date, [Item]) -> Void
+
     var onCategoryTap: (TaskCategory) -> Void
     var onAddTask: () -> Void
-    
+    var onSearch: () -> Void
+
+    /// Space below the title row before the scroll area.
+    private let headerToContentSpacing: CGFloat = 12
+    /// Space between category strip, water, calendar, and add button.
+    private let contentSpacing: CGFloat = 14
+    /// Inset from the window top for the header.
+    private let topInset: CGFloat = 6
+
     var body: some View {
-        VStack(spacing: 18) {
-            
+        VStack(spacing: headerToContentSpacing) {
             // Top Header
-            HStack {
+            HStack(alignment: .center) {
                 Image(systemName: "bubbles.and.sparkles.fill")
                     .foregroundColor(.white)
-                    .font(.title2)
-                
+                    .font(.title3)
+
                 Text("TaskBubble")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+
                 Spacer()
+
+                TaskToolbarCircleButtons(onAdd: onAddTask, onSearch: onSearch, diameter: 26)
             }
             .padding(.horizontal)
-            .padding(.top)
-            
-            // Horizontal Categories
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
-                    ForEach(TaskCategory.allCases) { category in
-                        Button(action: {
-                            onCategoryTap(category)
-                        }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: category.icon)
-                                    .font(.caption)
-                                
-                                Text(category.rawValue)
-                                    .font(.system(size: 14))
-                                    .fontWeight(.bold)
+
+            ScrollView {
+                VStack(spacing: contentSpacing) {
+                    // Horizontal Categories
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 14) {
+                            ForEach(TaskCategory.allCases) { category in
+                                Button(action: {
+                                    onCategoryTap(category)
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: category.icon)
+                                            .font(.caption)
+
+                                        Text(category.rawValue)
+                                            .font(.system(size: 13))
+                                            .fontWeight(.bold)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 10)
+                                    .background(category.color.opacity(0.15))
+                                    .cornerRadius(10)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .background(category.color.opacity(0.15))
-                            .cornerRadius(10)
                         }
-                        .buttonStyle(.plain)
+                        .padding(.horizontal)
                     }
+
+                    WaterTrackerView(waterIntake: $waterIntake)
+
+                    TaskCalendarBlock(
+                        items: items,
+                        scope: $calendarScope,
+                        onSelectDay: onCalendarDay
+                    )
+
+                    Button(action: onAddTask) {
+                        Label("Add New Task", systemImage: "plus.circle.fill")
+                            .font(.subheadline.weight(.semibold))
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 10)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
+                .padding(.bottom, contentSpacing)
             }
-            
-            // Water Tracker
-            WaterTrackerView(waterIntake: $waterIntake)
-            
-            Spacer()
-            
-            Button(action: {
-                onAddTask()
-            }) {
-                Label("Add New Task", systemImage: "plus.circle.fill")
-                    .font(.headline)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-            }
-            .buttonStyle(.plain)
-            .padding()
         }
+        .padding(.top, topInset)
     }
 }

@@ -62,7 +62,7 @@ struct ConfettiView: View {
             pieces[i].rotation += 20
             pieces[i].opacity -= 0.012
         }
-        pieces.removeAll { $0.opacity <= 0 || $0.y > 450 || $0.x < 0 || $0.x > 370 }
+        pieces.removeAll { $0.opacity <= 0 || $0.y > 422 || $0.x < 0 || $0.x > 356 }
         if pieces.isEmpty {
             isFinished = false
         }
@@ -86,7 +86,14 @@ struct ContentView: View {
     @State private var confettiOrigin: CGPoint = .zero
     @State private var selectedTask: Item? = nil
     @State private var sortOption: TaskSortOption = .timestamp
-    
+    @State private var showTaskSearch: Bool = false
+    @State private var calendarScope: TaskCalendarScope = .week
+    @State private var showCalendarDayTasks: Bool = false
+    @State private var calendarSheetDate: Date = Date()
+    @State private var calendarDayTasks: [Item] = []
+    @State private var calendarAddDay: Date?
+    @State private var showCalendarAddConfirm: Bool = false
+
     // Task Input States
     @State private var newTaskTitle: String = ""
     @State private var inputCategory: TaskCategory = .today
@@ -109,6 +116,18 @@ struct ContentView: View {
                 case .dashboard:
                     DashboardView(
                         waterIntake: $waterIntake,
+                        items: Array(items),
+                        calendarScope: $calendarScope,
+                        onCalendarDay: { day, dayTasks in
+                            if dayTasks.isEmpty {
+                                calendarAddDay = day
+                                showCalendarAddConfirm = true
+                            } else {
+                                calendarSheetDate = day
+                                calendarDayTasks = dayTasks
+                                showCalendarDayTasks = true
+                            }
+                        },
                         onCategoryTap: { category in
                             withAnimation {
                                 selectedCategory = category
@@ -119,10 +138,37 @@ struct ContentView: View {
                             withAnimation {
                                 currentView = .addTask
                             }
-                        }
+                        },
+                        onSearch: { showTaskSearch = true }
                     )
                 case .categoryList:
-                    categoryListView
+                    if let cat = selectedCategory {
+                        CategoryListView(
+                            category: cat,
+                            items: Array(items),
+                            sortOption: $sortOption,
+                            appDetectionService: appDetectionService,
+                            onBack: {
+                                withAnimation {
+                                    currentView = .dashboard
+                                }
+                            },
+                            onAddTask: {
+                                withAnimation {
+                                    currentView = .addTask
+                                }
+                            },
+                            onSelectTask: { selectedTask = $0 },
+                            onTaskComplete: { item, location in
+                                if !item.completed {
+                                    confettiOrigin = location
+                                    showConfetti = true
+                                }
+                                item.completed.toggle()
+                                saveContext()
+                            }
+                        )
+                    }
                 case .addTask:
                     AddTaskView(
                         newTaskTitle: $newTaskTitle,
@@ -150,7 +196,7 @@ struct ContentView: View {
                     .allowsHitTesting(false)
             }
         }
-        .frame(width: 370, height: 450)
+        .frame(width: 356, height: 422)
         .sheet(isPresented: $showAppPicker) {
             AppPickerView(appDetectionService: appDetectionService, selectedApp: $selectedApp, isPresented: $showAppPicker)
         }
@@ -160,72 +206,42 @@ struct ContentView: View {
         .sheet(item: $selectedTask) { item in
             TaskDetailView(item: item, appDetectionService: appDetectionService)
         }
-    }
-    
-    // MARK: - Subviews
-    
-    
-    private var categoryListView: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button(action: {
-                    withAnimation {
-                        currentView = .dashboard
-                    }
-                }) {
-                    Image(systemName: "chevron.left").font(.headline)
+        .sheet(isPresented: $showTaskSearch) {
+            TaskSearchView(items: Array(items)) { item in
+                showTaskSearch = false
+                DispatchQueue.main.async {
+                    selectedTask = item
                 }
-                .buttonStyle(.plain)
-                Spacer()
-                Text(selectedCategory?.rawValue ?? "").font(.headline)
-                Spacer()
-                Menu {
-                    Picker("Sort By", selection: $sortOption) {
-                        ForEach(TaskSortOption.allCases) { option in
-                            Text(option.rawValue).tag(option)
-                        }
-                    }
-                } label: {
-                    Image(systemName: "arrow.up.arrow.down").font(.headline)
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                
-                Button(action: {
+            }
+        }
+        .sheet(isPresented: $showCalendarDayTasks) {
+            CalendarDayTasksSheet(date: calendarSheetDate, tasks: calendarDayTasks) { item in
+                selectedTask = item
+            }
+        }
+        .confirmationDialog(
+            "Add a task for this day?",
+            isPresented: $showCalendarAddConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Add Task") {
+                if let d = calendarAddDay {
+                    selectedDeadline = Calendar.current.startOfDay(for: d)
+                    showDeadlinePicker = true
+                    newTaskTitle = ""
                     withAnimation {
                         currentView = .addTask
                     }
-                }) {
-                    Image(systemName: "plus").font(.headline)
                 }
-                .buttonStyle(.plain)
-                .padding(.leading, 8)
+                calendarAddDay = nil
             }
-            .padding()
-            .background((selectedCategory?.color ?? .blue).opacity(0.1))
-            
-            List {
-                let categoryTasks = sortedTasks(items.filter { $0.category == selectedCategory?.rawValue })
-                if categoryTasks.isEmpty {
-                    Text("No tasks yet!").foregroundColor(.secondary).padding()
-                } else {
-                    ForEach(categoryTasks) { item in
-                        TaskRow(item: item, onSelect: { selectedTask = item }, onComplete: { location in
-                            if !item.completed {
-                                confettiOrigin = location
-                                showConfetti = true
-                            }
-                            item.completed.toggle()
-                            saveContext()
-                        }, appDetectionService: appDetectionService)
-                    }
-                    .onDelete { offsets in
-                        offsets.map { categoryTasks[$0] }.forEach(viewContext.delete)
-                        saveContext()
-                    }
-                }
+            Button("Cancel", role: .cancel) {
+                calendarAddDay = nil
             }
-            .listStyle(.plain)
+        } message: {
+            if let d = calendarAddDay {
+                Text(DateFormatter.localizedString(from: d, dateStyle: .medium, timeStyle: .none))
+            }
         }
     }
     
@@ -265,23 +281,6 @@ struct ContentView: View {
                 selectedCategory = inputCategory
                 currentView = .categoryList
             }
-        }
-    }
-    
-    private func sortedTasks(_ tasks: [Item]) -> [Item] {
-        switch sortOption {
-        case .alphabetical:
-            return tasks.sorted { ($0.title ?? "") < ($1.title ?? "") }
-        case .dueDate:
-            return tasks.sorted {
-                let d1 = $0.deadline ?? Date.distantFuture
-                let d2 = $1.deadline ?? Date.distantFuture
-                return d1 < d2
-            }
-        case .priority:
-            return tasks.sorted { $0.priority > $1.priority } // High priority first
-        case .timestamp:
-            return tasks.sorted { ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) }
         }
     }
     

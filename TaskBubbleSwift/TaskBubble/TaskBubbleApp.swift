@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 @main
@@ -7,6 +8,7 @@ struct TaskBubbleApp: App {
     var body: some Scene {
         WindowGroup {
             mainContent
+                .background(FloatingWindowAttacher())
                 .onAppear {
                     window_size()
                 }
@@ -24,12 +26,12 @@ struct TaskBubbleApp: App {
     private var mainContent: some View {
         ContentView()
             .environment(\.managedObjectContext, persistenceController.container.viewContext)
-            .frame(width: 370, height: 450)
+            .frame(width: 356, height: 422)
     }
 
     func window_size() {
         if let window = NSApplication.shared.windows.first {
-            window.setContentSize(NSSize(width: 370, height: 450))
+            window.setContentSize(NSSize(width: 356, height: 422))
             window.styleMask.remove(.resizable) // Disable resizing
             window.titleVisibility = .hidden // Hide title
             window.titlebarAppearsTransparent = true
@@ -37,5 +39,18 @@ struct TaskBubbleApp: App {
     }
 }
 
-//added the app to the menu bar
-//TODO test/decide how the menubar button opens the app
+// Pins NSWindow.Level.floating to the hosting window only (avoids touching the menu-bar panel).
+private struct FloatingWindowAttacher: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        FloatingAnchorView()
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
+private final class FloatingAnchorView: NSView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        window?.level = .floating
+    }
+}
