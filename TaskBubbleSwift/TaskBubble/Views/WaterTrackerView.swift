@@ -18,36 +18,54 @@ struct WaterTrackerView: View {
             
             Spacer()
             
-            HStack(spacing: 4) {
+            HStack(spacing: 6) {
                 ForEach(0..<8) { index in
                     Image(systemName: index < waterIntake ? "drop.fill" : "drop")
                         .foregroundColor(.blue)
+                        .font(.title3)
+                        .contentShape(Rectangle())
                         .onTapGesture {
-                            updateWaterIntake(for: index)
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                waterIntake = index + 1
+                            }
                         }
                 }
             }
             
             Button(action: {
-                waterIntake = 0
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    if waterIntake < 8 {
+                        waterIntake += 1
+                    }
+                }
+            }) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.title3)
+                    .foregroundColor(.blue)
+            }
+            .buttonStyle(.plain)
+            .padding(.leading, 6)
+            
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    waterIntake = 0
+                }
             }) {
                 Image(systemName: "arrow.counterclockwise")
                     .font(.caption)
+                    .foregroundColor(.secondary)
             }
             .buttonStyle(.plain)
+            .padding(.leading, 4)
         }
         .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(Color.blue.opacity(0.1))
+        .padding(.vertical, 10)
+        .background(Color.blue.opacity(0.08))
         .cornerRadius(12)
         .padding(.horizontal)
-    }
-    
-    private func updateWaterIntake(for index: Int) {
-        if index == waterIntake {
-            waterIntake = min(waterIntake + 1, 8)
-        } else if index < waterIntake {
-            waterIntake = index + 1
-        }
+        .animation(.easeInOut(duration: 0.2), value: waterIntake)
     }
 }
+
+//TODO change design. add log for storing daily water tracking information for user analytics
+//add confetti when 8 cups have been drank
