@@ -16,9 +16,11 @@ extension Item {
     @NSManaged public var linkedResourceType: String?
     @NSManaged public var linkedResourceValue: String?
     @NSManaged public var linkedResourceAppDisplayName: String?
+    @NSManaged public var notes: String?
+    @NSManaged public var subtasks: NSSet?
 
 }
 
-extension Item : Identifiable {
-
+extension Item: Identifiable {
+    public var id: NSManagedObjectID { objectID }
 }

@@ -7,8 +7,17 @@
         <attribute name="linkedResourceAppDisplayName" optional="YES" attributeType="String"/>
         <attribute name="linkedResourceType" optional="YES" attributeType="String"/>
         <attribute name="linkedResourceValue" optional="YES" attributeType="String"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
         <attribute name="priority" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="subtasks" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Subtask" inverseName="parent" inverseEntity="Subtask"/>
+    </entity>
+    <entity name="Subtask" representedClassName="Subtask" syncable="YES">
+        <attribute name="linkedResourceAppDisplayName" optional="YES" attributeType="String"/>
+        <attribute name="linkedResourceType" optional="YES" attributeType="String"/>
+        <attribute name="linkedResourceValue" optional="YES" attributeType="String"/>
+        <attribute name="sortOrder" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="parent" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Item" inverseName="subtasks" inverseEntity="Item"/>
     </entity>
 </model>

@@ -36,6 +36,11 @@ public enum TaskCategory: String, CaseIterable, Identifiable {
             return .purple
         }
     }
+
+    /// Categories available when assigning a label (excludes aggregate "All Tasks").
+    public static var assignableCategories: [TaskCategory] {
+        [.today, .goals, .routine]
+    }
 }
 
 
@@ -51,6 +56,15 @@ public enum TaskPriority: Int16, CaseIterable, Identifiable, Codable {
         switch self {
         case .low: return "Low"
         case .medium: return "Medium"
+        case .high: return "High"
+        }
+    }
+
+    /// Short labels for compact UI (e.g. pill buttons).
+    public var shortLabel: String {
+        switch self {
+        case .low: return "Low"
+        case .medium: return "Mid"
         case .high: return "High"
         }
     }
@@ -89,6 +103,35 @@ public struct LinkedResource: Codable {
         self.type = type
         self.value = value
         self.displayName = displayName
+    }
+}
+
+// MARK: - Subtask draft (add/edit form)
+
+public struct SubtaskDraft: Identifiable, Equatable {
+    public let id: UUID
+    public var detectedApp: DetectedApp?
+    public var linkURL: String
+    /// Persisted app bundle ID when `detectedApp` is nil (e.g. editing a task saved earlier).
+    public var appBundleIdentifier: String?
+
+    public init(
+        id: UUID = UUID(),
+        detectedApp: DetectedApp? = nil,
+        linkURL: String = "",
+        appBundleIdentifier: String? = nil
+    ) {
+        self.id = id
+        self.detectedApp = detectedApp
+        self.linkURL = linkURL
+        self.appBundleIdentifier = appBundleIdentifier
+    }
+
+    public static func == (lhs: SubtaskDraft, rhs: SubtaskDraft) -> Bool {
+        lhs.id == rhs.id
+            && lhs.linkURL == rhs.linkURL
+            && lhs.detectedApp?.id == rhs.detectedApp?.id
+            && lhs.appBundleIdentifier == rhs.appBundleIdentifier
     }
 }
 

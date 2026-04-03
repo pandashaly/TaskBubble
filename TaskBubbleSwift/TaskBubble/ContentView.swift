@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import AppKit
 
 // MARK: - Confetti Component
 struct ConfettiPiece: Identifiable {
@@ -96,14 +97,18 @@ struct ContentView: View {
 
     // Task Input States
     @State private var newTaskTitle: String = ""
+    @State private var taskNotes: String = ""
     @State private var inputCategory: TaskCategory = .today
     @State private var inputPriority: TaskPriority = .medium
-    @State private var selectedDeadline: Date = Date()
-    @State private var showDeadlinePicker: Bool = false
+    @State private var taskDeadline: Date? = nil
     @State private var showAppPicker: Bool = false
     @State private var showLinkInput: Bool = false
     @State private var selectedApp: DetectedApp? = nil
     @State private var linkURL: String = ""
+    @State private var mainLinkBundleIdentifier: String? = nil
+    @State private var subtaskDrafts: [SubtaskDraft] = []
+    @State private var activeSubtaskID: UUID? = nil
+    @State private var editingTask: Item? = nil
     
     enum AppView {
         case dashboard, categoryList, addTask
@@ -135,6 +140,8 @@ struct ContentView: View {
                             }
                         },
                         onAddTask: {
+                            editingTask = nil
+                            resetAddTaskForm()
                             withAnimation {
                                 currentView = .addTask
                             }
@@ -154,6 +161,8 @@ struct ContentView: View {
                                 }
                             },
                             onAddTask: {
+                                editingTask = nil
+                                resetAddTaskForm()
                                 withAnimation {
                                     currentView = .addTask
                                 }
@@ -172,16 +181,22 @@ struct ContentView: View {
                 case .addTask:
                     AddTaskView(
                         newTaskTitle: $newTaskTitle,
+                        taskNotes: $taskNotes,
                         inputCategory: $inputCategory,
                         inputPriority: $inputPriority,
-                        showDeadlinePicker: $showDeadlinePicker,
-                        selectedDeadline: $selectedDeadline,
+                        taskDeadline: $taskDeadline,
                         showAppPicker: $showAppPicker,
                         showLinkInput: $showLinkInput,
                         selectedApp: $selectedApp,
                         linkURL: $linkURL,
-                        addTask: addTask,
+                        mainLinkBundleIdentifier: $mainLinkBundleIdentifier,
+                        subtaskDrafts: $subtaskDrafts,
+                        activeSubtaskID: $activeSubtaskID,
+                        isEditing: editingTask != nil,
+                        addTask: saveOrUpdateTask,
                         cancelAction: {
+                            editingTask = nil
+                            resetAddTaskForm()
                             withAnimation {
                                 currentView = .dashboard
                             }
@@ -201,10 +216,21 @@ struct ContentView: View {
             AppPickerView(appDetectionService: appDetectionService, selectedApp: $selectedApp, isPresented: $showAppPicker)
         }
         .sheet(isPresented: $showLinkInput) {
-            LinkInputView(linkURL: $linkURL, isPresented: $showLinkInput)
+            LinkInputView(linkURL: linkBindingForSheet, isPresented: $showLinkInput)
         }
         .sheet(item: $selectedTask) { item in
-            TaskDetailView(item: item, appDetectionService: appDetectionService)
+            TaskDetailView(
+                item: item,
+                appDetectionService: appDetectionService,
+                onEdit: {
+                    selectedTask = nil
+                    populateFormFromItem(item)
+                    editingTask = item
+                    withAnimation {
+                        currentView = .addTask
+                    }
+                }
+            )
         }
         .sheet(isPresented: $showTaskSearch) {
             TaskSearchView(items: Array(items)) { item in
@@ -219,6 +245,36 @@ struct ContentView: View {
                 selectedTask = item
             }
         }
+        .onChange(of: selectedApp) { _, newApp in
+            guard let app = newApp else { return }
+            if let id = activeSubtaskID {
+                if let i = subtaskDrafts.firstIndex(where: { $0.id == id }) {
+                    subtaskDrafts[i].detectedApp = app
+                    subtaskDrafts[i].linkURL = ""
+                    subtaskDrafts[i].appBundleIdentifier = nil
+                }
+                selectedApp = nil
+                activeSubtaskID = nil
+            } else {
+                linkURL = ""
+                mainLinkBundleIdentifier = nil
+            }
+        }
+        .onChange(of: linkURL) { _, new in
+            guard activeSubtaskID == nil else { return }
+            if !new.isEmpty {
+                selectedApp = nil
+                mainLinkBundleIdentifier = nil
+            }
+        }
+        .onChange(of: showAppPicker) { _, open in
+            if !open, selectedApp == nil {
+                activeSubtaskID = nil
+            }
+        }
+        .onChange(of: showLinkInput) { _, open in
+            if !open { activeSubtaskID = nil }
+        }
         .confirmationDialog(
             "Add a task for this day?",
             isPresented: $showCalendarAddConfirm,
@@ -226,9 +282,9 @@ struct ContentView: View {
         ) {
             Button("Add Task") {
                 if let d = calendarAddDay {
-                    selectedDeadline = Calendar.current.startOfDay(for: d)
-                    showDeadlinePicker = true
-                    newTaskTitle = ""
+                    editingTask = nil
+                    resetAddTaskForm()
+                    taskDeadline = Calendar.current.startOfDay(for: d)
                     withAnimation {
                         currentView = .addTask
                     }
@@ -245,39 +301,152 @@ struct ContentView: View {
         }
     }
     
-    private func addTask() {
-        guard !newTaskTitle.isEmpty else { return }
-        
-        DispatchQueue.main.async {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-            newItem.title = newTaskTitle
-            newItem.category = inputCategory.rawValue
-            newItem.priority = inputPriority.rawValue
-            newItem.completed = false
-            
-            if showDeadlinePicker {
-                newItem.deadline = selectedDeadline
+    private var linkBindingForSheet: Binding<String> {
+        Binding(
+            get: {
+                if let id = activeSubtaskID, let d = subtaskDrafts.first(where: { $0.id == id }) {
+                    return d.linkURL
+                }
+                return linkURL
+            },
+            set: { new in
+                if let id = activeSubtaskID, let i = subtaskDrafts.firstIndex(where: { $0.id == id }) {
+                    subtaskDrafts[i].linkURL = new
+                    subtaskDrafts[i].detectedApp = nil
+                    subtaskDrafts[i].appBundleIdentifier = nil
+                } else {
+                    linkURL = new
+                }
+            }
+        )
+    }
+
+    private func resetAddTaskForm() {
+        newTaskTitle = ""
+        taskNotes = ""
+        inputCategory = .today
+        inputPriority = .medium
+        taskDeadline = nil
+        selectedApp = nil
+        linkURL = ""
+        mainLinkBundleIdentifier = nil
+        subtaskDrafts = []
+        activeSubtaskID = nil
+    }
+
+    private func populateFormFromItem(_ item: Item) {
+        newTaskTitle = item.title ?? ""
+        taskNotes = item.notes ?? ""
+        if let cat = item.category, let c = TaskCategory(rawValue: cat) {
+            inputCategory = c
+        } else {
+            inputCategory = .today
+        }
+        inputPriority = TaskPriority(rawValue: item.priority) ?? .medium
+        taskDeadline = item.deadline
+        mainLinkBundleIdentifier = nil
+        selectedApp = nil
+        linkURL = ""
+        if let type = item.linkedResourceType, let value = item.linkedResourceValue {
+            if type == LinkedResourceType.app.rawValue {
+                selectedApp = appDetectionService.installedApps.first { $0.id == value }
+                if selectedApp == nil {
+                    mainLinkBundleIdentifier = value
+                }
             } else {
-                newItem.deadline = nil
+                linkURL = value
             }
-            
+        }
+        let subs = (item.subtasks as? Set<Subtask>) ?? []
+        subtaskDrafts = subs.sorted { $0.sortOrder < $1.sortOrder }.compactMap { st -> SubtaskDraft? in
+            guard let type = st.linkedResourceType, let value = st.linkedResourceValue else { return nil }
+            if type == LinkedResourceType.app.rawValue {
+                let app = appDetectionService.installedApps.first { $0.id == value }
+                return SubtaskDraft(
+                    detectedApp: app,
+                    linkURL: "",
+                    appBundleIdentifier: app == nil ? value : nil
+                )
+            }
+            return SubtaskDraft(linkURL: value)
+        }
+    }
+
+    private func saveOrUpdateTask() {
+        guard !newTaskTitle.isEmpty else { return }
+
+        DispatchQueue.main.async {
+            let item: Item
+            if let editing = editingTask {
+                item = editing
+            } else {
+                item = Item(context: viewContext)
+                item.timestamp = Date()
+                item.completed = false
+            }
+
+            item.title = newTaskTitle
+            item.notes = taskNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : taskNotes
+            item.category = inputCategory.rawValue
+            item.priority = inputPriority.rawValue
+            item.deadline = taskDeadline
+
             if let app = selectedApp {
-                newItem.linkedResourceType = LinkedResourceType.app.rawValue
-                newItem.linkedResourceValue = app.id
-                newItem.linkedResourceAppDisplayName = app.displayName
+                item.linkedResourceType = LinkedResourceType.app.rawValue
+                item.linkedResourceValue = app.id
+                item.linkedResourceAppDisplayName = app.displayName
             } else if !linkURL.isEmpty {
-                newItem.linkedResourceType = LinkedResourceType.url.rawValue
-                newItem.linkedResourceValue = linkURL
+                item.linkedResourceType = LinkedResourceType.url.rawValue
+                item.linkedResourceValue = linkURL
+                item.linkedResourceAppDisplayName = nil
+            } else if let bid = mainLinkBundleIdentifier {
+                item.linkedResourceType = LinkedResourceType.app.rawValue
+                item.linkedResourceValue = bid
+                item.linkedResourceAppDisplayName = nil
+            } else {
+                item.linkedResourceType = nil
+                item.linkedResourceValue = nil
+                item.linkedResourceAppDisplayName = nil
             }
-            
+
+            if let existing = item.subtasks as? Set<Subtask> {
+                existing.forEach { viewContext.delete($0) }
+            }
+
+            var order: Int16 = 0
+            for draft in subtaskDrafts.prefix(10) {
+                if let app = draft.detectedApp {
+                    let sub = Subtask(context: viewContext)
+                    sub.parent = item
+                    sub.sortOrder = order
+                    order += 1
+                    sub.linkedResourceType = LinkedResourceType.app.rawValue
+                    sub.linkedResourceValue = app.id
+                    sub.linkedResourceAppDisplayName = app.displayName
+                } else if let bid = draft.appBundleIdentifier, draft.linkURL.isEmpty {
+                    let sub = Subtask(context: viewContext)
+                    sub.parent = item
+                    sub.sortOrder = order
+                    order += 1
+                    sub.linkedResourceType = LinkedResourceType.app.rawValue
+                    sub.linkedResourceValue = bid
+                    sub.linkedResourceAppDisplayName = nil
+                } else if !draft.linkURL.isEmpty {
+                    let sub = Subtask(context: viewContext)
+                    sub.parent = item
+                    sub.sortOrder = order
+                    order += 1
+                    sub.linkedResourceType = LinkedResourceType.url.rawValue
+                    sub.linkedResourceValue = draft.linkURL
+                    sub.linkedResourceAppDisplayName = nil
+                }
+            }
+
             saveContext()
-            
+
             withAnimation {
-                newTaskTitle = ""
-                selectedApp = nil
-                linkURL = ""
-                showDeadlinePicker = false
+                editingTask = nil
+                resetAddTaskForm()
                 selectedCategory = inputCategory
                 currentView = .categoryList
             }
@@ -431,43 +600,93 @@ struct TaskDetailView: View {
     @ObservedObject var item: Item
     @ObservedObject var appDetectionService: AppDetectionService
     @Environment(\.dismiss) var dismiss
-    
+    var onEdit: () -> Void
+
+    private var sortedSubtasks: [Subtask] {
+        let subs = (item.subtasks as? Set<Subtask>) ?? []
+        return subs.sorted { $0.sortOrder < $1.sortOrder }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text(item.category ?? "Task").font(.caption).padding(4).background(Color.blue.opacity(0.1)).cornerRadius(4)
-                Spacer()
-                Button("Close") { dismiss() }.buttonStyle(.plain)
-            }
-            Text(item.title ?? "Untitled").font(.title2).bold()
-            if let deadline = item.deadline {
-                Label("Deadline: \(deadline, style: .date)", systemImage: "calendar").foregroundColor(.secondary)
-            }
-            Divider()
-            if let type = item.linkedResourceType, let value = item.linkedResourceValue {
-                Button(action: {
-                    if type == LinkedResourceType.app.rawValue { appDetectionService.launchApp(bundleIdentifier: value) }
-                    else if let url = normalizedURL(from: value) {
-                        NSWorkspace.shared.open(url)
-                    }
-                }) {
-                    HStack {
-                        if type == LinkedResourceType.app.rawValue {
-                            if let icon = appDetectionService.getIcon(for: value) { Image(nsImage: icon).resizable().frame(width: 32, height: 32) }
-                            Text("Open \(item.linkedResourceAppDisplayName ?? "App")")
-                        } else {
-                            LinkIconView(link: value)
-                                        .frame(width: 32, height: 32)
-                            Text("Open Link")
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Text(item.category ?? "Task").font(.caption).padding(4).background(Color.blue.opacity(0.1)).cornerRadius(4)
+                    Spacer()
+                    Button("Edit") { onEdit() }.buttonStyle(.plain)
+                    Button("Close") { dismiss() }.buttonStyle(.plain)
+                }
+                Text(item.title ?? "Untitled").font(.title2).bold()
+                if let notes = item.notes, !notes.isEmpty {
+                    Text(notes)
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                if let deadline = item.deadline {
+                    Label("Deadline: \(deadline, style: .date)", systemImage: "calendar").foregroundColor(.secondary)
+                }
+                Divider()
+                if !sortedSubtasks.isEmpty {
+                    Text("Subtasks").font(.headline)
+                    ForEach(sortedSubtasks) { sub in
+                        if let type = sub.linkedResourceType, let value = sub.linkedResourceValue {
+                            Button(action: {
+                                if type == LinkedResourceType.app.rawValue {
+                                    appDetectionService.launchApp(bundleIdentifier: value)
+                                } else if let url = normalizedURL(from: value) {
+                                    NSWorkspace.shared.open(url)
+                                }
+                            }) {
+                                HStack {
+                                    if type == LinkedResourceType.app.rawValue {
+                                        if let icon = appDetectionService.getIcon(for: value) {
+                                            Image(nsImage: icon).resizable().frame(width: 24, height: 24)
+                                        }
+                                        Text(sub.linkedResourceAppDisplayName ?? "Open App")
+                                    } else {
+                                        LinkIconView(link: value).frame(width: 24, height: 24)
+                                        Text("Open Link")
+                                    }
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right.square")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.gray.opacity(0.08))
+                                .cornerRadius(8)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
-                    .padding().frame(maxWidth: .infinity).background(Color.blue.opacity(0.1)).cornerRadius(8)
                 }
-                .buttonStyle(.plain)
+                if let type = item.linkedResourceType, let value = item.linkedResourceValue {
+                    Button(action: {
+                        if type == LinkedResourceType.app.rawValue { appDetectionService.launchApp(bundleIdentifier: value) }
+                        else if let url = normalizedURL(from: value) {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }) {
+                        HStack {
+                            if type == LinkedResourceType.app.rawValue {
+                                if let icon = appDetectionService.getIcon(for: value) { Image(nsImage: icon).resizable().frame(width: 32, height: 32) }
+                                Text("Open \(item.linkedResourceAppDisplayName ?? "App")")
+                            } else {
+                                LinkIconView(link: value)
+                                    .frame(width: 32, height: 32)
+                                Text("Open Link")
+                            }
+                        }
+                        .padding().frame(maxWidth: .infinity).background(Color.blue.opacity(0.1)).cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            Spacer()
+            .padding()
         }
-        .padding().frame(width: 350, height: 300)
+        .frame(minWidth: 350, minHeight: 280)
     }
 }
 
