@@ -9,7 +9,7 @@ import CoreData
 import SwiftUI
 
 struct DashboardView: View {
-    @Binding var waterIntake: Int
+    @ObservedObject var waterService: WaterIntakeService
     let items: [Item]
     @Binding var calendarScope: TaskCalendarScope
     var onCalendarDay: (Date, [Item]) -> Void
@@ -70,7 +70,7 @@ struct DashboardView: View {
                         .padding(.horizontal)
                     }
 
-                    WaterTrackerView(waterIntake: $waterIntake)
+                    WaterTrackerView(waterService: waterService)
 
                     TaskCalendarBlock(
                         items: items,

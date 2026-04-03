@@ -80,8 +80,15 @@ struct ContentView: View {
         animation: .default)
     private var items: FetchedResults<Item>
     
-    @AppStorage("waterIntake") private var waterIntake: Int = 0
+    @StateObject private var waterService: WaterIntakeService
     @State private var currentView: AppView = .dashboard
+    
+    private let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+
+    init() {
+        let context = PersistenceController.shared.container.viewContext
+        _waterService = StateObject(wrappedValue: WaterIntakeService(context: context))
+    }
     @State private var selectedCategory: TaskCategory? = nil
     @State private var showConfetti: Bool = false
     @State private var confettiOrigin: CGPoint = .zero
@@ -120,7 +127,7 @@ struct ContentView: View {
                 switch currentView {
                 case .dashboard:
                     DashboardView(
-                        waterIntake: $waterIntake,
+                        waterService: waterService,
                         items: Array(items),
                         calendarScope: $calendarScope,
                         onCalendarDay: { day, dayTasks in
@@ -274,6 +281,9 @@ struct ContentView: View {
         }
         .onChange(of: showLinkInput) { _, open in
             if !open { activeSubtaskID = nil }
+        }
+        .onReceive(timer) { _ in
+            waterService.refreshCurrentIntake()
         }
         .confirmationDialog(
             "Add a task for this day?",
@@ -472,17 +482,19 @@ struct TaskRow: View {
     var onSelect: () -> Void
     var onComplete: (CGPoint) -> Void
     @ObservedObject var appDetectionService: AppDetectionService
+    var isTemporarilyCompleted: Bool = false
     
     var body: some View {
-        GeometryReader { geometry in
+        let isDone = item.completed || isTemporarilyCompleted
+        return GeometryReader { geometry in
             HStack {
                 Button(action: {
                     let frame = geometry.frame(in: .global)
                     let center = CGPoint(x: frame.minX + 20, y: frame.midY)
                     onComplete(center)
                 }) {
-                    Image(systemName: item.completed ? "checkmark.circle.fill" : "circle")
-                        .foregroundColor(item.completed ? .green : .gray)
+                    Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
+                        .foregroundColor(isDone ? .green : .gray)
                         .font(.title3)
                 }
                 .buttonStyle(.plain)
@@ -495,7 +507,7 @@ struct TaskRow: View {
                                 .frame(width: 6, height: 6)
                         }
                         Text(item.title ?? "Untitled")
-                            .strikethrough(item.completed)
+                            .strikethrough(isDone)
                     }
                     if let deadline = item.deadline {
                         Text(deadline, style: .date).font(.caption2).foregroundColor(.secondary)

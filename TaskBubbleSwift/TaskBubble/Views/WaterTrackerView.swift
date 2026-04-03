@@ -1,71 +1,77 @@
-//
-//  WaterTrackerView.swift
-//  TaskBubble
-//
-//  Created by Shalyca Sottoriva on 02/04/2026.
-//
-
-
 import SwiftUI
 
 struct WaterTrackerView: View {
-    @Binding var waterIntake: Int
+    @ObservedObject var waterService: WaterIntakeService
     
     var body: some View {
         HStack {
-            Text("Water Intake")
-                .font(.headline)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Water Intake")
+                    .font(.headline)
+//                Text("Daily goal: 8 cups")
+//                    .font(.caption2)
+//                    .foregroundColor(.secondary)
+            }
             
             Spacer()
             
-            HStack(spacing: 6) {
-                ForEach(0..<8) { index in
-                    Image(systemName: index < waterIntake ? "drop.fill" : "drop")
-                        .foregroundColor(.blue)
-                        .font(.title3)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                waterIntake = index + 1
-                            }
-                        }
-                }
-            }
-            
-            Button(action: {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    if waterIntake < 8 {
-                        waterIntake += 1
+            HStack(spacing: 12) {
+                // Counter Display
+                HStack(spacing: 6) {
+                    ZStack {
+                        Image(systemName: "drop.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(.blue)
+                        
+                        Text("\(waterService.currentIntake)")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                            .offset(y: 2)
+                    }
+                    
+                    if waterService.currentIntake >= 8 {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.caption)
                     }
                 }
-            }) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.title3)
-                    .foregroundColor(.blue)
-            }
-            .buttonStyle(.plain)
-            .padding(.leading, 6)
-            
-            Button(action: {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    waterIntake = 0
+                
+                // Droplets (visual indicator for the first 8)
+                HStack(spacing: 4) {
+                    ForEach(0..<8) { index in
+                        Image(systemName: index < waterService.currentIntake ? "drop.fill" : "drop")
+                            .font(.system(size: 14))
+                            .foregroundColor(.blue.opacity(index < waterService.currentIntake ? 1.0 : 0.4))
+                    }
                 }
-            }) {
-                Image(systemName: "arrow.counterclockwise")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                
+                // Add Button
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        waterService.updateIntake(delta: 1)
+                    }
+                }) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.blue)
+                }
+                .buttonStyle(.plain)
+                
+                // Reset Button (moved to the end, smaller)
+                Button(action: {
+                    waterService.resetIntake()
+                }) {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.caption2)
+                        .foregroundColor(.secondary.opacity(0.5))
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
-            .padding(.leading, 4)
         }
         .padding(.horizontal)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
         .background(Color.blue.opacity(0.08))
         .cornerRadius(12)
         .padding(.horizontal)
-        .animation(.easeInOut(duration: 0.2), value: waterIntake)
     }
 }
-
-//TODO change design. add log for storing daily water tracking information for user analytics
-//add confetti when 8 cups have been drank

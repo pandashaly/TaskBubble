@@ -20,4 +20,8 @@
         <attribute name="sortOrder" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <relationship name="parent" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Item" inverseName="subtasks" inverseEntity="Item"/>
     </entity>
+    <entity name="WaterIntake" representedClassName="WaterIntake" syncable="YES">
+        <attribute name="count" optional="NO" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="date" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
 </model>

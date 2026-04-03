@@ -22,5 +22,4 @@ extension Item {
 }
 
 extension Item: Identifiable {
-    public var id: NSManagedObjectID { objectID }
 }

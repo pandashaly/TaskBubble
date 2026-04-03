@@ -16,5 +16,4 @@ extension Subtask {
 }
 
 extension Subtask: Identifiable {
-    public var id: NSManagedObjectID { objectID }
 }

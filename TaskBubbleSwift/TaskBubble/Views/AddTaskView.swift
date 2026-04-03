@@ -41,11 +41,11 @@ struct AddTaskView: View {
         content()
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(Color(.bgdark.opacity(0.15)))
             .cornerRadius(14)
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.gray.opacity(0.12), lineWidth: 1)
+                    .stroke(Color.blue.opacity(0.12), lineWidth: 1)
             )
     }
 
@@ -185,12 +185,12 @@ struct AddTaskView: View {
     private var taskNameRow: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Task Name")
-                .font(.caption)
+                .font(.title3)
                 .foregroundColor(.secondary)
             HStack(alignment: .center, spacing: 8) {
                 TextField("What needs to be done?", text: $newTaskTitle)
                     .textFieldStyle(.roundedBorder)
-                    .font(.title3)
+                    .font(.caption)
 
                 Menu {
                     Button("Choose App") {
@@ -242,7 +242,7 @@ struct AddTaskView: View {
     private var priorityPills: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Priority")
-                .font(.caption)
+                .font(.title3)
                 .foregroundColor(.secondary)
             HStack(spacing: 8) {
                 ForEach(TaskPriority.allCases) { p in
