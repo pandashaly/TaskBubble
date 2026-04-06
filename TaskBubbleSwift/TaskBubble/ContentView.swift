@@ -116,6 +116,7 @@ struct ContentView: View {
     @State private var subtaskDrafts: [SubtaskDraft] = []
     @State private var activeSubtaskID: UUID? = nil
     @State private var editingTask: Item? = nil
+    @State private var showQuickAdd: Bool = false
     
     enum AppView {
         case dashboard, categoryList, addTask
@@ -150,7 +151,7 @@ struct ContentView: View {
                             editingTask = nil
                             resetAddTaskForm()
                             withAnimation {
-                                currentView = .addTask
+                                showQuickAdd = true
                             }
                         },
                         onSearch: { showTaskSearch = true }
@@ -171,7 +172,7 @@ struct ContentView: View {
                                 editingTask = nil
                                 resetAddTaskForm()
                                 withAnimation {
-                                    currentView = .addTask
+                                    showQuickAdd = true
                                 }
                             },
                             onSelectTask: { selectedTask = $0 },
@@ -216,6 +217,37 @@ struct ContentView: View {
             if showConfetti {
                 ConfettiView(isFinished: $showConfetti, origin: confettiOrigin)
                     .allowsHitTesting(false)
+            }
+            
+            if showQuickAdd {
+                Color.black.opacity(0.3)
+                    .edgesIgnoringSafeArea(.all)
+                    .onTapGesture {
+                        showQuickAdd = false
+                    }
+                
+                QuickAddTaskView(
+                    newTaskTitle: $newTaskTitle,
+                    selectedApp: $selectedApp,
+                    showAppPicker: $showAppPicker,
+                    onAdd: {
+                        saveOrUpdateTask()
+                        showQuickAdd = false
+                    },
+                    onExpand: {
+                        showQuickAdd = false
+                        withAnimation {
+                            currentView = .addTask
+                        }
+                    },
+                    onCancel: {
+                        showQuickAdd = false
+                        resetAddTaskForm()
+                    },
+                    appDetectionService: appDetectionService
+                )
+                .transition(.scale.combined(with: .opacity))
+                .zIndex(10)
             }
         }
         .frame(width: 356, height: 422)
