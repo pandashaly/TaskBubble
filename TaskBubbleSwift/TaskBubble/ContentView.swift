@@ -673,10 +673,10 @@ struct AppPickerView: View {
                         isPresented = false
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(tempURL.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .padding(.horizontal)
-            .disabled(tempURL.trimmingCharacters(in: .whitespaces).isEmpty)
             // OR DIVIDER
             HStack {
                 Text("or")
