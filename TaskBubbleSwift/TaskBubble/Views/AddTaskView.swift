@@ -4,7 +4,7 @@
 //
 //  Created by Shalyca Sottoriva on 02/04/2026.
 //
-
+//
 import SwiftUI
 
 struct AddTaskView: View {
@@ -106,6 +106,7 @@ struct AddTaskView: View {
             }
         }
         .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+        .frame(width: 350, height: 400)
         .onAppear {
             if let d = taskDeadline {
                 deadlineDraft = d
@@ -191,28 +192,22 @@ struct AddTaskView: View {
                 TextField("What needs to be done?", text: $newTaskTitle)
                     .textFieldStyle(.roundedBorder)
                     .font(.caption)
-
-                Menu {
-                    Button("Choose App") {
-                        activeSubtaskID = nil
-                        appDetectionService.loadInstalledApplications()
-                        showAppPicker = true
+                
+                Button(action: {
+                    appDetectionService.loadInstalledApplications()
+                    showAppPicker = true
+                }) {
+                    if let app = selectedApp {
+                        Image(nsImage: app.icon)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                    } else {
+                        Image(systemName: "app.badge")
+                            .font(.title3)
+                            .foregroundColor(.secondary)
                     }
-                    Button("Enter URL") {
-                        activeSubtaskID = nil
-                        showLinkInput = true
-                    }
-                } label: {
-                    mainLinkIcon
                 }
-                .menuStyle(.borderlessButton)
-                .frame(width: 40, height: 40)
-                .background(Color.gray.opacity(0.08))
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                )
             }
         }
     }
@@ -436,3 +431,268 @@ struct AddTaskView: View {
         }
     }
 }
+
+//===================
+//
+//
+//import SwiftUI
+//
+//struct AddTaskView: View {
+//    @Binding var newTaskTitle: String
+//    @Binding var taskNotes: String
+//    @Binding var inputCategory: TaskCategory
+//    @Binding var inputPriority: TaskPriority
+//    @Binding var taskDeadline: Date?
+//    @Binding var showAppPicker: Bool
+//    @Binding var showLinkInput: Bool
+//    @Binding var selectedApp: DetectedApp?
+//    @Binding var linkURL: String
+//    @Binding var mainLinkBundleIdentifier: String?
+//    @Binding var subtaskDrafts: [SubtaskDraft]
+//    @Binding var activeSubtaskID: UUID?
+//
+//    let isEditing: Bool
+//    let addTask: () -> Void
+//    let cancelAction: () -> Void
+//
+//    @ObservedObject var appDetectionService: AppDetectionService
+//
+//    @State private var showDeadlineSheet = false
+//    @State private var deadlineDraft = Date()
+//
+//    var body: some View {
+//        VStack(spacing: 20) {
+//            
+//            header
+//            
+//            ScrollView {
+//                VStack(spacing: 18) {
+//                    
+//                    mainCard
+//                    
+//                    prioritySection
+//                    
+//                    bottomRow
+//                    
+//                    subtasksSection
+//                }
+//                .padding(.horizontal, 20)
+//                .padding(.bottom, 20)
+//            }
+//        }
+//        .frame(width: 380, height: 520)
+//        .background(Color.black.opacity(0.96))
+//    }
+//}
+//
+//extension AddTaskView {
+//
+//    private var header: some View {
+//        HStack {
+//            Text(isEditing ? "Edit task" : "Add new task")
+//                .font(.system(size: 28, weight: .semibold))
+//                .foregroundColor(.white)
+//
+//            Spacer()
+//
+//            Button(action: addTask) {
+//                Circle()
+//                    .fill(Color.white.opacity(0.08))
+//                    .frame(width: 46, height: 46)
+//                    .overlay(
+//                        Image(systemName: "arrow.up.right")
+//                            .foregroundColor(.white)
+//                    )
+//            }
+//            .buttonStyle(.plain)
+//        }
+//        .padding(.horizontal, 20)
+//        .padding(.top, 20)
+//    }
+//
+//    private var mainCard: some View {
+//        VStack(alignment: .leading, spacing: 18) {
+//            
+//            fieldTitle("Task Name")
+//
+//            HStack {
+//                pillTextField("What needs to be done?", text: $newTaskTitle)
+//
+//                Button(action: {
+//                    appDetectionService.loadInstalledApplications()
+//                    showAppPicker = true
+//                }) {
+//                    ZStack {
+//                        RoundedRectangle(cornerRadius: 14)
+//                            .fill(Color.white.opacity(0.06))
+//                            .frame(width: 50, height: 50)
+//
+//                        if let app = selectedApp {
+//                            Image(nsImage: app.icon)
+//                                .resizable()
+//                                .scaledToFit()
+//                                .frame(width: 24, height: 24)
+//                        } else {
+//                            Image(systemName: "app.badge")
+//                                .font(.title3)
+//                                .foregroundColor(.white.opacity(0.7))
+//                        }
+//                    }
+//                }
+//                .buttonStyle(.plain)
+//            }
+//
+//            fieldTitle("Description")
+//
+//            TextEditor(text: $taskNotes)
+//                .frame(height: 120)
+//                .padding(14)
+//                .background(
+//                    RoundedRectangle(cornerRadius: 18)
+//                        .fill(Color.white.opacity(0.05))
+//                )
+//                .foregroundColor(.white)
+//
+//            HStack(spacing: 12) {
+//                
+//                VStack(alignment: .leading, spacing: 8) {
+//                    fieldTitle("Due Date")
+//
+//                    Button {
+//                        showDeadlineSheet = true
+//                    } label: {
+//                        datePill
+//                    }
+//                    .buttonStyle(.plain)
+//                }
+//
+//                VStack(alignment: .leading, spacing: 8) {
+//                    fieldTitle("Category")
+//
+//                    categoryPill
+//                }
+//            }
+//        }
+//        .padding(20)
+//        .background(
+//            RoundedRectangle(cornerRadius: 24)
+//                .fill(Color.white.opacity(0.04))
+//        )
+//    }
+//
+//    private var prioritySection: some View {
+//        VStack(alignment: .leading, spacing: 12) {
+//            fieldTitle("Priority")
+//
+//            HStack(spacing: 12) {
+//                ForEach(TaskPriority.allCases) { p in
+//                    Button {
+//                        inputPriority = p
+//                    } label: {
+//                        Text(p.shortLabel)
+//                            .foregroundColor(inputPriority == p ? .black : .white.opacity(0.8))
+//                            .frame(maxWidth: .infinity)
+//                            .padding(.vertical, 12)
+//                            .background(
+//                                Capsule()
+//                                    .fill(inputPriority == p ? Color.white : Color.white.opacity(0.06))
+//                            )
+//                    }
+//                    .buttonStyle(.plain)
+//                }
+//            }
+//        }
+//    }
+//
+//    private var bottomRow: some View {
+//        HStack {
+//            Button("Cancel") {
+//                cancelAction()
+//            }
+//            .foregroundColor(.gray)
+//
+//            Spacer()
+//
+//            Button(isEditing ? "Save Task" : "Add Task") {
+//                addTask()
+//            }
+//            .foregroundColor(.black)
+//            .padding(.horizontal, 20)
+//            .padding(.vertical, 10)
+//            .background(Capsule().fill(Color.white))
+//        }
+//    }
+//
+//    private var subtasksSection: some View {
+//        VStack(alignment: .leading, spacing: 12) {
+//            fieldTitle("Subtasks")
+//
+//            ForEach(subtaskDrafts) { draft in
+//                HStack {
+//                    RoundedRectangle(cornerRadius: 12)
+//                        .fill(Color.white.opacity(0.05))
+//                        .frame(width: 44, height: 44)
+//
+//                    Text("Subtask")
+//                        .foregroundColor(.white.opacity(0.8))
+//
+//                    Spacer()
+//                }
+//            }
+//        }
+//    }
+//
+//    private func fieldTitle(_ text: String) -> some View {
+//        Text(text)
+//            .font(.subheadline)
+//            .foregroundColor(.gray)
+//    }
+//
+//    private func pillTextField(_ placeholder: String, text: Binding<String>) -> some View {
+//        TextField(placeholder, text: text)
+//            .padding()
+//            .background(
+//                RoundedRectangle(cornerRadius: 18)
+//                    .fill(Color.white.opacity(0.05))
+//            )
+//            .foregroundColor(.white)
+//    }
+//
+//    private var datePill: some View {
+//        HStack {
+//            if let deadline = taskDeadline {
+//                Text(deadline, style: .date)
+//                .foregroundColor(.white.opacity(0.85))
+//                
+//            } else {
+//                Text("Select")
+//                .foregroundColor(.white.opacity(0.85))
+//            }
+//
+//            Spacer()
+//        }
+//        .padding()
+//        .background(
+//            RoundedRectangle(cornerRadius: 18)
+//                .fill(Color.white.opacity(0.05))
+//        )
+//    }
+//
+//    private var categoryPill: some View {
+//        HStack {
+//            Text(inputCategory.rawValue)
+//                .foregroundColor(.white.opacity(0.85))
+//
+//            Spacer()
+//
+//            Image(systemName: "chevron.down")
+//                .foregroundColor(.gray)
+//        }
+//        .padding()
+//        .background(
+//            RoundedRectangle(cornerRadius: 18)
+//                .fill(Color.white.opacity(0.05))
+//        )
+//    }
+//}
+

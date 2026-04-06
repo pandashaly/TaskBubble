@@ -12,7 +12,7 @@ struct QuickAddTaskView: View {
     @ObservedObject var appDetectionService: AppDetectionService
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             HStack {
                 Text("Quick Add")
                     .font(.headline)
@@ -68,10 +68,10 @@ struct QuickAddTaskView: View {
             
             Button(action: onExpand) {
                 HStack {
-                    Text("More Details")
+                    Text("Advanced")
                     Image(systemName: "chevron.down")
                 }
-                .font(.caption)
+                .fontWeight(.semibold)
                 .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity)
             }
