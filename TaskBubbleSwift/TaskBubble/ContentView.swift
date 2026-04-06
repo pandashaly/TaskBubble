@@ -252,10 +252,12 @@ struct ContentView: View {
         }
         .frame(width: 356, height: 422)
         .sheet(isPresented: $showAppPicker) {
-            AppPickerView(appDetectionService: appDetectionService, selectedApp: $selectedApp, isPresented: $showAppPicker)
-        }
-        .sheet(isPresented: $showLinkInput) {
-            LinkInputView(linkURL: linkBindingForSheet, isPresented: $showLinkInput)
+            AppPickerView(
+                appDetectionService: appDetectionService,
+                selectedApp: $selectedApp,
+                linkURL: linkBindingForSheet,
+                isPresented: $showAppPicker
+            )
         }
         .sheet(item: $selectedTask) { item in
             TaskDetailView(
@@ -590,53 +592,141 @@ struct TaskRow: View {
     }
 }
 
+//struct AppPickerView: View {
+//    @ObservedObject var appDetectionService: AppDetectionService
+//    @Binding var selectedApp: DetectedApp?
+//    @Binding var isPresented: Bool
+//    @State private var searchText: String = ""
+//    
+//    var body: some View {
+//        VStack {
+//            Text("Select an App").font(.headline).padding(.top)
+//            TextField("Search apps...", text: $searchText).textFieldStyle(RoundedBorderTextFieldStyle()).padding(.horizontal)
+//            
+//            if appDetectionService.isLoading {
+//                Spacer()
+//                ProgressView("Scanning apps...")
+//                Spacer()
+//            } else {
+//                List(appDetectionService.installedApps.filter { searchText.isEmpty || $0.displayName.localizedCaseInsensitiveContains(searchText) }) { app in
+//                    HStack {
+//                        Image(nsImage: app.icon).resizable().frame(width: 24, height: 24)
+//                        Text(app.displayName)
+//                        Spacer()
+//                    }
+//                    .contentShape(Rectangle())
+//                    .onTapGesture { selectedApp = app; isPresented = false }
+//                }
+//            }
+//            Button("Cancel") { isPresented = false }.padding()
+//        }
+//        .frame(width: 300, height: 400)
+//    }
+//}
+//
+//struct LinkInputView: View {
+//    @Binding var linkURL: String
+//    @Binding var isPresented: Bool
+//    @State private var tempURL: String = ""
+//    
+//    var body: some View {
+//        VStack(spacing: 16) {
+//            Text("Enter URL").font(.headline)
+//            TextField("https://...", text: $tempURL).textFieldStyle(RoundedBorderTextFieldStyle()).padding(.horizontal)
+//            HStack {
+//                Button("Cancel") { isPresented = false }
+//                Button("Save") { linkURL = tempURL; isPresented = false }.buttonStyle(.borderedProminent)
+//            }
+//        }
+//        .padding().frame(width: 300, height: 150).onAppear { tempURL = linkURL }
+//    }
+//}
+
 struct AppPickerView: View {
     @ObservedObject var appDetectionService: AppDetectionService
     @Binding var selectedApp: DetectedApp?
+    @Binding var linkURL: String
     @Binding var isPresented: Bool
+    
     @State private var searchText: String = ""
+    @State private var tempURL: String = ""
     
     var body: some View {
-        VStack {
-            Text("Select an App").font(.headline).padding(.top)
-            TextField("Search apps...", text: $searchText).textFieldStyle(RoundedBorderTextFieldStyle()).padding(.horizontal)
+        VStack(spacing: 12) {
+            
+            Text("Link App")
+                .font(.headline)
+                .padding(.top)
+            
+            // URL INPUT
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Paste a link")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                HStack {
+                    TextField("https://...", text: $tempURL)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    Button("Save") {
+                        linkURL = tempURL
+                        isPresented = false
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+            .padding(.horizontal)
+            .disabled(tempURL.trimmingCharacters(in: .whitespaces).isEmpty)
+            // OR DIVIDER
+            HStack {
+                Text("or")
+                    .foregroundColor(.secondary)
+                    .font(.headline)
+            }
+            .padding(.horizontal)
+            
+            // SEARCH APPS
+            TextField("Search apps...", text: $searchText)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding(.horizontal)
             
             if appDetectionService.isLoading {
                 Spacer()
                 ProgressView("Scanning apps...")
                 Spacer()
             } else {
-                List(appDetectionService.installedApps.filter { searchText.isEmpty || $0.displayName.localizedCaseInsensitiveContains(searchText) }) { app in
+                List(
+                    appDetectionService.installedApps.filter {
+                        searchText.isEmpty ||
+                        $0.displayName.localizedCaseInsensitiveContains(searchText)
+                    }
+                ) { app in
                     HStack {
-                        Image(nsImage: app.icon).resizable().frame(width: 24, height: 24)
+                        Image(nsImage: app.icon)
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                        
                         Text(app.displayName)
+                        
                         Spacer()
                     }
                     .contentShape(Rectangle())
-                    .onTapGesture { selectedApp = app; isPresented = false }
+                    .onTapGesture {
+                        selectedApp = app
+                        isPresented = false
+                    }
                 }
             }
-            Button("Cancel") { isPresented = false }.padding()
-        }
-        .frame(width: 300, height: 400)
-    }
-}
-
-struct LinkInputView: View {
-    @Binding var linkURL: String
-    @Binding var isPresented: Bool
-    @State private var tempURL: String = ""
-    
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("Enter URL").font(.headline)
-            TextField("https://...", text: $tempURL).textFieldStyle(RoundedBorderTextFieldStyle()).padding(.horizontal)
-            HStack {
-                Button("Cancel") { isPresented = false }
-                Button("Save") { linkURL = tempURL; isPresented = false }.buttonStyle(.borderedProminent)
+            
+            Button("Cancel") {
+                isPresented = false
             }
+            .padding(.bottom)
         }
-        .padding().frame(width: 300, height: 150).onAppear { tempURL = linkURL }
+        .frame(width: 320, height: 400)
+        .onAppear {
+            tempURL = linkURL
+        }
     }
 }
 
