@@ -35,6 +35,12 @@ struct TaskBubbleApp: App {
             window.styleMask.remove(.resizable) // Disable resizing
             window.titleVisibility = .hidden // Hide title
             window.titlebarAppearsTransparent = true
+            //------
+            window.styleMask.insert(.fullSizeContentView)
+            window.isMovableByWindowBackground = true
+            window.standardWindowButton(.closeButton)?.isHidden = true
+            window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+            window.standardWindowButton(.zoomButton)?.isHidden = true
         }
     }
 }
