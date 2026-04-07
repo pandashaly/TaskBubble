@@ -119,7 +119,9 @@ struct ContentView: View {
     @State private var showQuickAdd: Bool = false
     
     enum AppView {
-        case dashboard, categoryList, addTask
+        case dashboard
+        case categoryList
+        case addTask
     }
     
     var body: some View {
@@ -133,7 +135,7 @@ struct ContentView: View {
                         calendarScope: $calendarScope,
                         onCalendarDay: { day, dayTasks in
                             if dayTasks.isEmpty {
-                                calendarAddDay = day
+                                 calendarAddDay = day
                                 showCalendarAddConfirm = true
                             } else {
                                 calendarSheetDate = day
@@ -187,30 +189,32 @@ struct ContentView: View {
                         )
                     }
                 case .addTask:
-                    AddTaskView(
-                        newTaskTitle: $newTaskTitle,
-                        taskNotes: $taskNotes,
-                        inputCategory: $inputCategory,
-                        inputPriority: $inputPriority,
-                        taskDeadline: $taskDeadline,
-                        showAppPicker: $showAppPicker,
-                        showLinkInput: $showLinkInput,
-                        selectedApp: $selectedApp,
-                        linkURL: $linkURL,
-                        mainLinkBundleIdentifier: $mainLinkBundleIdentifier,
-                        subtaskDrafts: $subtaskDrafts,
-                        activeSubtaskID: $activeSubtaskID,
-                        isEditing: editingTask != nil,
-                        addTask: saveOrUpdateTask,
-                        cancelAction: {
-                            editingTask = nil
-                            resetAddTaskForm()
-                            withAnimation {
-                                currentView = .dashboard
-                            }
-                        },
-                        appDetectionService: appDetectionService
-                    )
+                    EmptyView()
+//                case .addTask:
+//                    AddTaskView(
+//                        newTaskTitle: $newTaskTitle,
+//                        taskNotes: $taskNotes,
+//                        inputCategory: $inputCategory,
+//                        inputPriority: $inputPriority,
+//                        taskDeadline: $taskDeadline,
+//                        showAppPicker: $showAppPicker,
+//                        showLinkInput: $showLinkInput,
+//                        selectedApp: $selectedApp,
+//                        linkURL: $linkURL,
+//                        mainLinkBundleIdentifier: $mainLinkBundleIdentifier,
+//                        subtaskDrafts: $subtaskDrafts,
+//                        activeSubtaskID: $activeSubtaskID,
+//                        isEditing: editingTask != nil,
+//                        addTask: saveOrUpdateTask,
+//                        cancelAction: {
+//                            editingTask = nil
+//                            resetAddTaskForm()
+//                            withAnimation {
+//                                currentView = .dashboard
+//                            }
+//                        },
+//                        appDetectionService: appDetectionService
+//                    )
                 }
             }
             
@@ -251,7 +255,7 @@ struct ContentView: View {
                 .zIndex(10)
             }
         }
-        .frame(width: 356, height: 422)
+        //frame(width: 300, height: 422)
         .sheet(isPresented: $showAppPicker) {
             AppPickerView(
                 appDetectionService: appDetectionService,
@@ -272,6 +276,33 @@ struct ContentView: View {
                         currentView = .addTask
                     }
                 }
+            )
+        }
+        .sheet(isPresented: Binding(
+            get: { currentView == .addTask },
+            set: { if !$0 { currentView = .dashboard } }
+        )) {
+            AddTaskView(
+                newTaskTitle: $newTaskTitle,
+                taskNotes: $taskNotes,
+                inputCategory: $inputCategory,
+                inputPriority: $inputPriority,
+                taskDeadline: $taskDeadline,
+                showAppPicker: $showAppPicker,
+                showLinkInput: $showLinkInput,
+                selectedApp: $selectedApp,
+                linkURL: $linkURL,
+                mainLinkBundleIdentifier: $mainLinkBundleIdentifier,
+                subtaskDrafts: $subtaskDrafts,
+                activeSubtaskID: $activeSubtaskID,
+                isEditing: editingTask != nil,
+                addTask: saveOrUpdateTask,
+                cancelAction: {
+                    editingTask = nil
+                    resetAddTaskForm()
+                    currentView = .dashboard
+                },
+                appDetectionService: appDetectionService
             )
         }
         .sheet(isPresented: $showTaskSearch) {
