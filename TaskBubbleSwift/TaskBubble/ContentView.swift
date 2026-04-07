@@ -230,6 +230,7 @@ struct ContentView: View {
                     newTaskTitle: $newTaskTitle,
                     selectedApp: $selectedApp,
                     showAppPicker: $showAppPicker,
+                    linkURL: $linkURL,
                     onAdd: {
                         saveOrUpdateTask()
                         showQuickAdd = false

@@ -4,6 +4,7 @@ struct QuickAddTaskView: View {
     @Binding var newTaskTitle: String
     @Binding var selectedApp: DetectedApp?
     @Binding var showAppPicker: Bool
+    @Binding var linkURL: String
     
     let onAdd: () -> Void
     let onExpand: () -> Void
@@ -37,6 +38,9 @@ struct QuickAddTaskView: View {
                         Image(nsImage: app.icon)
                             .resizable()
                             .scaledToFit()
+                            .frame(width: 24, height: 24)
+                    } else if !linkURL.isEmpty {
+                        LinkIconView(link: linkURL)
                             .frame(width: 24, height: 24)
                     } else {
                         Image(systemName: "app.badge")

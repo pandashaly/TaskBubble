@@ -202,6 +202,9 @@ struct AddTaskView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 24, height: 24)
+                    } else if !linkURL.isEmpty {
+                        LinkIconView(link: linkURL)
+                            .frame(width: 24, height: 24)
                     } else {
                         Image(systemName: "app.badge")
                             .font(.title3)
@@ -222,6 +225,7 @@ struct AddTaskView: View {
         } else if !linkURL.isEmpty {
             LinkIconView(link: linkURL)
                 .frame(width: 28, height: 28)
+        
         } else if let bid = mainLinkBundleIdentifier, let img = appDetectionService.getIcon(for: bid) {
             Image(nsImage: img)
                 .resizable()
