@@ -224,11 +224,18 @@ struct ContentView: View {
             }
             
             if showQuickAdd {
-                Color.black.opacity(0.3)
-                    .edgesIgnoringSafeArea(.all)
-                    .onTapGesture {
-                        showQuickAdd = false
-                    }
+                    Rectangle()
+                        .fill(.ultraThinMaterial.opacity(0.85))
+                        .background(Color.black.opacity(0.25))
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            showQuickAdd = false
+                        }
+//                Color.black.opacity(0.5)
+//                    .edgesIgnoringSafeArea(.all)
+//                    .onTapGesture {
+//                        showQuickAdd = false
+//                    }
                 
                 QuickAddTaskView(
                     newTaskTitle: $newTaskTitle,
