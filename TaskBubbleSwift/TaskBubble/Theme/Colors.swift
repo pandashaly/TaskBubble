@@ -184,6 +184,7 @@ extension Color {
         static let normal = Color(hex: "#D9856C")
         static let light = Color(hex: "#E8A48B")
     }
+    static let water = Color(hex: "#6CC0D9")
 }
 
 /*

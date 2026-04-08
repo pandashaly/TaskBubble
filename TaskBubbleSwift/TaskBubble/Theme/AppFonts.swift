@@ -32,4 +32,11 @@ struct AppFonts {
     static func pillText() -> Font {
         .custom("Montserrat-Medium", size: 12)
     }
+    static let body = Font.custom("Montserrat-Regular", size: 14)
+    static let bodyBold = Font.custom("Montserrat-Bold", size: 14)
+    static let headline = Font.custom("Montserrat-SemiBold", size: 18)
+    //static let title = Font.custom("Montserrat-Bold", size: 20)
+    static let caption = Font.custom("Montserrat-Light", size: 12)
+    static let numbers = Font.custom("Montserrat-SemiBold", size: 12)
 }
+

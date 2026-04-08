@@ -46,6 +46,7 @@ struct AddTaskView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
                     .stroke(Color.blue.opacity(0.12), lineWidth: 1)
+                
             )
     }
 

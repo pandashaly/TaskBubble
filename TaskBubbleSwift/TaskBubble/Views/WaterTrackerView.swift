@@ -21,11 +21,11 @@ struct WaterTrackerView: View {
                     ZStack {
                         Image(systemName: "drop.fill")
                             .font(.system(size: 28))
-                            .foregroundColor(.blue)
+                            .foregroundColor(Color.water)
                         
                         Text("\(waterService.currentIntake)")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                             .offset(y: 2)
                     }
                     
@@ -41,7 +41,7 @@ struct WaterTrackerView: View {
                     ForEach(0..<8) { index in
                         Image(systemName: index < waterService.currentIntake ? "drop.fill" : "drop")
                             .font(.system(size: 14))
-                            .foregroundColor(.blue.opacity(index < waterService.currentIntake ? 1.0 : 0.4))
+                            .foregroundColor(Color.water.opacity(index < waterService.currentIntake ? 1.0 : 0.4))
                     }
                 }
                 
@@ -53,7 +53,7 @@ struct WaterTrackerView: View {
                 }) {
                     Image(systemName: "plus.circle.fill")
                         .font(.title2)
-                        .foregroundColor(.blue)
+                        .foregroundColor(Color.water)
                 }
                 .buttonStyle(.plain)
                 
@@ -63,7 +63,7 @@ struct WaterTrackerView: View {
                 }) {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.caption2)
-                        .foregroundColor(.secondary.opacity(0.5))
+                        .foregroundColor(.white.opacity(0.5))
                 }
                 .buttonStyle(.plain)
             }

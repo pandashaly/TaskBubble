@@ -23,18 +23,18 @@ struct DashboardView: View {
     /// Space between category strip, water, calendar, and add button.
     private let contentSpacing: CGFloat = 14
     /// Inset from the window top for the header.
-    private let topInset: CGFloat = 6
+    private let topInset: CGFloat = 3
 
     var body: some View {
         VStack(spacing: headerToContentSpacing) {
             // Top Header
             HStack(alignment: .center) {
-                Image(systemName: "bubbles.and.sparkles.fill")
+                Image(systemName: "bubbles.fill")
                     .foregroundColor(.white)
                     .font(.title3)
 
                 Text("TaskBubble")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .font(.system(size: 20, weight: .bold))
 
                 Spacer()
 
@@ -84,7 +84,7 @@ struct DashboardView: View {
                             .padding(.vertical, 6)
                             .padding(.horizontal, 10)
                             .frame(maxWidth: .infinity)
-                            .background(Color.blue)
+                            .background(AppColors.shalyPurple)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
