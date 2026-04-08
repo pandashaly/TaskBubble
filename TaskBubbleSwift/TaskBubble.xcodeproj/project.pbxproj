@@ -29,9 +29,22 @@
 		78B6421C2D285F1B0056193F /* TaskBubbleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TaskBubbleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F6DAB8AA2F866EE7006DDE3C /* Exceptions for "TaskBubble" folder in "TaskBubble" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 78B641FB2D285F190056193F /* TaskBubble */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		78B641FE2D285F190056193F /* TaskBubble */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F6DAB8AA2F866EE7006DDE3C /* Exceptions for "TaskBubble" folder in "TaskBubble" target */,
+			);
 			path = TaskBubble;
 			sourceTree = "<group>";
 		};
@@ -401,6 +414,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TaskBubble/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Task Bubble";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -442,6 +456,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TaskBubble/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Task Bubble";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
