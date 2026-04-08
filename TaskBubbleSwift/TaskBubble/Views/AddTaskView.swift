@@ -41,7 +41,7 @@ struct AddTaskView: View {
         content()
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
-            .background(Color(.bgdark.opacity(0.15)))
+            .background(AppColors.background.opacity(0.15))
             .cornerRadius(14)
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
