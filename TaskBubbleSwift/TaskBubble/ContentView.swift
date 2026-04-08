@@ -126,6 +126,9 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
+            AppColors.background
+                .ignoresSafeArea()
+            
             VStack(spacing: 0) {
                 switch currentView {
                 case .dashboard:
@@ -326,16 +329,8 @@ struct ContentView: View {
             }
         }
         .onChange(of: selectedApp) { _, newApp in
-            guard let app = newApp else { return }
-            if let id = activeSubtaskID {
-                if let i = subtaskDrafts.firstIndex(where: { $0.id == id }) {
-                    subtaskDrafts[i].detectedApp = app
-                    subtaskDrafts[i].linkURL = ""
-                    subtaskDrafts[i].appBundleIdentifier = nil
-                }
-                selectedApp = nil
-                activeSubtaskID = nil
-            } else {
+            guard newApp != nil else { return }
+            if activeSubtaskID == nil {
                 linkURL = ""
                 mainLinkBundleIdentifier = nil
             }
@@ -386,29 +381,16 @@ struct ContentView: View {
     
     private var linkBindingForSheet: Binding<String> {
         Binding(
-            get: {
-                if let id = activeSubtaskID, let d = subtaskDrafts.first(where: { $0.id == id }) {
-                    return d.linkURL
-                }
-                return linkURL
-            },
-            set: { new in
-                if let id = activeSubtaskID, let i = subtaskDrafts.firstIndex(where: { $0.id == id }) {
-                    subtaskDrafts[i].linkURL = new
-                    subtaskDrafts[i].detectedApp = nil
-                    subtaskDrafts[i].appBundleIdentifier = nil
-                } else {
-                    linkURL = new
-                }
-            }
+            get: { linkURL },
+            set: { linkURL = $0 }
         )
     }
 
     private func resetAddTaskForm() {
         newTaskTitle = ""
         taskNotes = ""
-        inputCategory = .today
-        inputPriority = .medium
+        inputCategory = .allTasks
+        inputPriority = .low
         taskDeadline = nil
         selectedApp = nil
         linkURL = ""
@@ -425,7 +407,7 @@ struct ContentView: View {
         } else {
             inputCategory = .today
         }
-        inputPriority = TaskPriority(rawValue: item.priority) ?? .medium
+        inputPriority = TaskPriority(rawValue: item.priority) ?? .low
         taskDeadline = item.deadline
         mainLinkBundleIdentifier = nil
         selectedApp = nil
@@ -441,17 +423,8 @@ struct ContentView: View {
             }
         }
         let subs = (item.subtasks as? Set<Subtask>) ?? []
-        subtaskDrafts = subs.sorted { $0.sortOrder < $1.sortOrder }.compactMap { st -> SubtaskDraft? in
-            guard let type = st.linkedResourceType, let value = st.linkedResourceValue else { return nil }
-            if type == LinkedResourceType.app.rawValue {
-                let app = appDetectionService.installedApps.first { $0.id == value }
-                return SubtaskDraft(
-                    detectedApp: app,
-                    linkURL: "",
-                    appBundleIdentifier: app == nil ? value : nil
-                )
-            }
-            return SubtaskDraft(linkURL: value)
+        subtaskDrafts = subs.sorted { $0.sortOrder < $1.sortOrder }.map { st in
+            SubtaskDraft(title: st.linkedResourceValue ?? "")
         }
     }
 
@@ -498,31 +471,13 @@ struct ContentView: View {
 
             var order: Int16 = 0
             for draft in subtaskDrafts.prefix(10) {
-                if let app = draft.detectedApp {
-                    let sub = Subtask(context: viewContext)
-                    sub.parent = item
-                    sub.sortOrder = order
-                    order += 1
-                    sub.linkedResourceType = LinkedResourceType.app.rawValue
-                    sub.linkedResourceValue = app.id
-                    sub.linkedResourceAppDisplayName = app.displayName
-                } else if let bid = draft.appBundleIdentifier, draft.linkURL.isEmpty {
-                    let sub = Subtask(context: viewContext)
-                    sub.parent = item
-                    sub.sortOrder = order
-                    order += 1
-                    sub.linkedResourceType = LinkedResourceType.app.rawValue
-                    sub.linkedResourceValue = bid
-                    sub.linkedResourceAppDisplayName = nil
-                } else if !draft.linkURL.isEmpty {
-                    let sub = Subtask(context: viewContext)
-                    sub.parent = item
-                    sub.sortOrder = order
-                    order += 1
-                    sub.linkedResourceType = LinkedResourceType.url.rawValue
-                    sub.linkedResourceValue = draft.linkURL
-                    sub.linkedResourceAppDisplayName = nil
-                }
+                let sub = Subtask(context: viewContext)
+                sub.parent = item
+                sub.sortOrder = order
+                order += 1
+                sub.linkedResourceType = "Text"
+                sub.linkedResourceValue = draft.title
+                sub.linkedResourceAppDisplayName = nil
             }
 
             saveContext()
@@ -762,7 +717,10 @@ struct AppPickerView: View {
             }
             .padding(.bottom)
         }
+        .background(AppColors.card)
         .frame(width: 320, height: 400)
+        //.fill(.ultraThinMaterial.opacity(0.85))
+        .background(Color.black.opacity(0.25))
         .onAppear {
             tempURL = linkURL
         }
@@ -803,36 +761,14 @@ struct TaskDetailView: View {
                 if !sortedSubtasks.isEmpty {
                     Text("Subtasks").font(.headline)
                     ForEach(sortedSubtasks) { sub in
-                        if let type = sub.linkedResourceType, let value = sub.linkedResourceValue {
-                            Button(action: {
-                                if type == LinkedResourceType.app.rawValue {
-                                    appDetectionService.launchApp(bundleIdentifier: value)
-                                } else if let url = normalizedURL(from: value) {
-                                    NSWorkspace.shared.open(url)
-                                }
-                            }) {
-                                HStack {
-                                    if type == LinkedResourceType.app.rawValue {
-                                        if let icon = appDetectionService.getIcon(for: value) {
-                                            Image(nsImage: icon).resizable().frame(width: 24, height: 24)
-                                        }
-                                        Text(sub.linkedResourceAppDisplayName ?? "Open App")
-                                    } else {
-                                        LinkIconView(link: value).frame(width: 24, height: 24)
-                                        Text("Open Link")
-                                    }
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right.square")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding(10)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color.gray.opacity(0.08))
-                                .cornerRadius(8)
-                            }
-                            .buttonStyle(.plain)
+                        HStack {
+                            Image(systemName: "circle")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(sub.linkedResourceValue ?? "")
+                                .font(.body)
                         }
+                        .padding(.vertical, 2)
                     }
                 }
                 if let type = item.linkedResourceType, let value = item.linkedResourceValue {
@@ -860,6 +796,7 @@ struct TaskDetailView: View {
             .padding()
         }
         .frame(minWidth: 350, minHeight: 280)
+        .background(AppColors.card)
     }
 }
 

@@ -35,6 +35,7 @@ struct TaskBubbleApp: App {
             window.styleMask.remove(.resizable) // Disable resizing
             window.titleVisibility = .hidden // Hide title
             window.titlebarAppearsTransparent = true
+            window.backgroundColor = NSColor(Color.Surface.a0)
             //------
             window.styleMask.insert(.fullSizeContentView)
             window.isMovableByWindowBackground = true

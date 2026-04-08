@@ -41,11 +41,11 @@ struct AddTaskView: View {
         content()
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
-            .background(AppColors.background.opacity(0.15))
+            .background(AppColors.background)
             .cornerRadius(14)
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.blue.opacity(0.12), lineWidth: 1)
+                    .stroke(Color.Surface.a30.opacity(0.5), lineWidth: 1)
                 
             )
     }
@@ -53,14 +53,15 @@ struct AddTaskView: View {
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Notes")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(.headline)
+                .foregroundColor(.white)
             TextEditor(text: notesBinding)
                 .font(.body)
+                .foregroundColor(Color.Surface.a50)
                 .scrollContentBackground(.hidden)
                 .frame(minHeight: 100, maxHeight: 140)
                 .padding(8)
-                .background(Color(nsColor: .textBackgroundColor))
+                .background(Color.Surface.a10)
                 .cornerRadius(10)
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
@@ -106,7 +107,7 @@ struct AddTaskView: View {
                 .padding(.bottom, 8)
             }
         }
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+        .background(AppColors.background)
         .frame(width: 350, height: 400)
         .onAppear {
             if let d = taskDeadline {
@@ -124,25 +125,21 @@ struct AddTaskView: View {
             VStack(spacing: 16) {
                 Text("Deadline").font(.headline)
                 DatePicker("", selection: $deadlineDraft, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
+                    .datePickerStyle(.automatic)
                     .labelsHidden()
                 HStack {
-                    Button("Remove deadline") {
-                        taskDeadline = nil
-                        showDeadlineSheet = false
-                    }
-                    .buttonStyle(.plain)
                     Spacer()
+                    Button("Remove") { taskDeadline = nil ; showDeadlineSheet = false}
                     Button("Cancel") { showDeadlineSheet = false }
                     Button("Done") {
                         taskDeadline = deadlineDraft
                         showDeadlineSheet = false
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.glassProminent)
                 }
             }
             .padding()
-            .frame(width: 320)
+            .frame(width: 240)
         }
     }
 
@@ -181,18 +178,18 @@ struct AddTaskView: View {
         .padding(.horizontal, 16)
         .padding(.top, 10)
         .padding(.bottom, 8)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(AppColors.background)
     }
 
     private var taskNameRow: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Task Name")
-                .font(.title3)
-                .foregroundColor(.secondary)
+                .font(.headline)
+                .foregroundColor(.white)
             HStack(alignment: .center, spacing: 8) {
-                TextField("What needs to be done?", text: $newTaskTitle)
+                TextField("To Do...", text: $newTaskTitle)
                     .textFieldStyle(.roundedBorder)
-                    .font(.caption)
+                    .font(.body)
                 
                 Button(action: {
                     appDetectionService.loadInstalledApplications()
@@ -242,8 +239,8 @@ struct AddTaskView: View {
     private var priorityPills: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Priority")
-                .font(.title3)
-                .foregroundColor(.secondary)
+                .font(.headline)
+                .foregroundColor(.white)
             HStack(spacing: 8) {
                 ForEach(TaskPriority.allCases) { p in
                     Button {
@@ -272,8 +269,8 @@ struct AddTaskView: View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Deadline")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(.headline)
+                    .foregroundColor(.white)
                 Button(action: {
                     deadlineDraft = taskDeadline ?? Date()
                     showDeadlineSheet = true
@@ -284,7 +281,7 @@ struct AddTaskView: View {
                                 .font(.subheadline.weight(.medium))
                         } else {
                             Text("Deadline")
-                                .font(.subheadline)
+                                .font(.body)
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -299,9 +296,9 @@ struct AddTaskView: View {
             .frame(maxWidth: .infinity)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Label")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Text("Category")
+                    .font(.headline)
+                    .foregroundColor(.white)
                 Menu {
                     ForEach(TaskCategory.assignableCategories) { cat in
                         Button(cat.rawValue) {
@@ -347,18 +344,15 @@ struct AddTaskView: View {
             }
 
             if subtaskDrafts.isEmpty {
-                Text("Add up to 10 subtasks with an app or URL.")
+                Text("Add up to 10 subtasks.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             } else {
-                ScrollView {
-                    VStack(spacing: 8) {
-                        ForEach(subtaskDrafts) { draft in
-                            subtaskRow(draft: binding(for: draft.id))
-                        }
+                VStack(spacing: 8) {
+                    ForEach(subtaskDrafts) { draft in
+                        subtaskRow(draft: binding(for: draft.id))
                     }
                 }
-                .frame(maxHeight: 220)
             }
         }
     }
@@ -376,64 +370,30 @@ struct AddTaskView: View {
 
     private func subtaskRow(draft: Binding<SubtaskDraft>) -> some View {
         let id = draft.wrappedValue.id
+        let titleBinding = Binding(
+            get: { draft.wrappedValue.title },
+            set: { draft.wrappedValue.title = clampedSubtask($0) }
+        )
+        
         return HStack(spacing: 10) {
-            Menu {
-                Button("Choose App") {
-                    activeSubtaskID = id
-                    appDetectionService.loadInstalledApplications()
-                    showAppPicker = true
-                }
-                Button("Enter URL") {
-                    activeSubtaskID = id
-                    showLinkInput = true
-                }
-            } label: {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(Color.secondary.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(nsColor: .textBackgroundColor).opacity(0.5)))
+            TextField("Subtask title...", text: titleBinding)
+                .textFieldStyle(.roundedBorder)
+                .font(.subheadline)
 
-                    subtaskIcon(for: draft.wrappedValue)
-                        .padding(8)
-                }
-                .frame(width: 56, height: 56)
-            }
-            .menuStyle(.borderlessButton)
-
-            Text("App or link")
-                .font(.caption)
+            Text("\(wordCount(draft.wrappedValue.title))/\(maxSubtaskWords)")
+                .font(.caption2)
                 .foregroundColor(.secondary)
-
-            Spacer(minLength: 0)
+                .frame(width: 35)
 
             Button {
                 subtaskDrafts.removeAll { $0.id == id }
             } label: {
                 Image(systemName: "minus.circle.fill")
-                    .font(.title3)
                     .foregroundColor(.secondary)
             }
             .buttonStyle(.plain)
         }
-        .padding(.vertical, 4)
-    }
-
-    @ViewBuilder
-    private func subtaskIcon(for draft: SubtaskDraft) -> some View {
-        if let app = draft.detectedApp {
-            Image(nsImage: app.icon)
-                .resizable()
-                .scaledToFit()
-        } else if let bid = draft.appBundleIdentifier, let img = appDetectionService.getIcon(for: bid) {
-            Image(nsImage: img)
-                .resizable()
-                .scaledToFit()
-        } else if !draft.linkURL.isEmpty {
-            LinkIconView(link: draft.linkURL)
-        } else {
-            Image(systemName: "square.dashed")
-                .foregroundColor(.secondary)
-        }
+        .padding(.vertical, 2)
     }
 }
 

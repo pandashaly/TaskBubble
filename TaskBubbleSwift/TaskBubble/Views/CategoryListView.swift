@@ -91,7 +91,9 @@ struct CategoryListView: View {
                 }
             }
             .listStyle(.plain)
+            .scrollContentBackground(.hidden)
         }
+        .background(AppColors.background)
     }
 
     private func sortedTasks(_ tasks: [Item]) -> [Item] {

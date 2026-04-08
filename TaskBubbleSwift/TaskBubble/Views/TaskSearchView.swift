@@ -65,5 +65,6 @@ struct TaskSearchView: View {
             }
         }
         .frame(width: 340, height: 400)
+        .background(AppColors.background)
     }
 }

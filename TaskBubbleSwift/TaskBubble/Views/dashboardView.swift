@@ -93,7 +93,9 @@ struct DashboardView: View {
                 }
                 .padding(.bottom, contentSpacing)
             }
+            .scrollContentBackground(.hidden)
         }
         .padding(.top, topInset)
+        .background(AppColors.background)
     }
 }

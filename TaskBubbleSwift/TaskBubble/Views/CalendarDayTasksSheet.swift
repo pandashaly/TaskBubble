@@ -59,5 +59,6 @@ struct CalendarDayTasksSheet: View {
         }
         .padding()
         .frame(width: 320, height: 380)
+        .background(AppColors.background)
     }
 }

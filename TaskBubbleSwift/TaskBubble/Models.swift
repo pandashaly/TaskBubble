@@ -110,28 +110,18 @@ public struct LinkedResource: Codable {
 
 public struct SubtaskDraft: Identifiable, Equatable {
     public let id: UUID
-    public var detectedApp: DetectedApp?
-    public var linkURL: String
-    /// Persisted app bundle ID when `detectedApp` is nil (e.g. editing a task saved earlier).
-    public var appBundleIdentifier: String?
+    public var title: String
 
     public init(
         id: UUID = UUID(),
-        detectedApp: DetectedApp? = nil,
-        linkURL: String = "",
-        appBundleIdentifier: String? = nil
+        title: String = ""
     ) {
         self.id = id
-        self.detectedApp = detectedApp
-        self.linkURL = linkURL
-        self.appBundleIdentifier = appBundleIdentifier
+        self.title = title
     }
 
     public static func == (lhs: SubtaskDraft, rhs: SubtaskDraft) -> Bool {
-        lhs.id == rhs.id
-            && lhs.linkURL == rhs.linkURL
-            && lhs.detectedApp?.id == rhs.detectedApp?.id
-            && lhs.appBundleIdentifier == rhs.appBundleIdentifier
+        lhs.id == rhs.id && lhs.title == rhs.title
     }
 }
 

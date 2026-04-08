@@ -31,6 +31,7 @@ struct QuickAddTaskView: View {
                 TextField("To Do...", text: $newTaskTitle)
                     .textFieldStyle(.roundedBorder)
                     .font(.body)
+                    //.background(AppColors.card)
                 
                 Button(action: {
                     appDetectionService.loadInstalledApplications()
@@ -47,12 +48,12 @@ struct QuickAddTaskView: View {
                     } else {
                         Image(systemName: "app.badge")
                             .font(.title3)
-                            .foregroundColor(isHoveringAppIcon ? AppColors.shalyPurple.opacity(0.05) : AppColors.shalyPurple) //TODO fix hover
+                            .foregroundColor(AppColors.shalyPurple) //TODO fix hover
                     }
                 }
                 .buttonStyle(.plain)
                 .frame(width: 32, height: 32)
-                .background(AppColors.card)
+                .background(isHoveringAppIcon ? AppColors.shalyPurple.opacity(0.03) : AppColors.card)
                 .cornerRadius(6)
             }
             
@@ -85,7 +86,8 @@ struct QuickAddTaskView: View {
         }
         .padding(16)
         .frame(width: 300)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(AppColors.background)
+        //.stroke(AppColors.shalyPurple, lineWidth: 1)
         .cornerRadius(12)
         .shadow(radius: 10)
     }

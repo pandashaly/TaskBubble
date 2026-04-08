@@ -105,7 +105,7 @@ extension Color {
     }
 
     enum Surface {
-        static let a0 = Color(hex: "#25232C")
+        static let a0 = Color(hex: "#2A292B")//#2A292B //25232C
         static let a10 = Color(hex: "#393840")
         static let a20 = Color(hex: "#4F4D55")
         static let a30 = Color(hex: "#66646B")
