@@ -4,7 +4,7 @@
 //
 //  Created by Shalyca Sottoriva on 02/04/2026.
 //
-//
+
 import SwiftUI
 
 struct AddTaskView: View {
@@ -40,39 +40,41 @@ struct AddTaskView: View {
     private func formCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         content()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
+            .padding(10)
             .background(AppColors.background)
-            .cornerRadius(14)
+            .cornerRadius(12)
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.Surface.a30.opacity(0.5), lineWidth: 1)
-                
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.Surface.a30.opacity(0.4), lineWidth: 1)
             )
     }
 
     private var notesSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Notes")
                 .font(.headline)
                 .foregroundColor(.white)
-            TextEditor(text: notesBinding)
-                .font(.body)
-                .foregroundColor(Color.Surface.a50)
-                .scrollContentBackground(.hidden)
-                .frame(minHeight: 100, maxHeight: 140)
-                .padding(8)
-                .background(Color.Surface.a10)
-                .cornerRadius(10)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.gray.opacity(0.22), lineWidth: 1)
-                )
             HStack {
                 Spacer()
-                Text("\(wordCount(taskNotes)) / \(maxNotesWords) words")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                Text("\(wordCount(taskNotes))")
+                    .foregroundColor(
+                        wordCount(taskNotes) >= 250 ? .red :
+                        wordCount(taskNotes) >= 200 ? .yellow : .secondary
+                    )
+                    .font(.caption)
+                Text("/ \(maxNotesWords)")
+                    .foregroundColor(wordCount(taskNotes) >= maxNotesWords ? .red : .secondary)
+                .font(.caption)
             }
+            RichTextEditor(text: notesBinding)
+                .frame(minHeight: 60, maxHeight: 100)
+                .padding(6)
+                .background(Color.Surface.a10)
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.gray.opacity(0.22), lineWidth: 1)
+                )
         }
     }
 
@@ -81,34 +83,32 @@ struct AddTaskView: View {
             headerBar
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 12) {
+                    // Main Details Card
                     formCard {
-                        taskNameRow
+                        VStack(alignment: .leading, spacing: 12) {
+                            taskNameRow
+                            Divider().background(Color.Surface.a30.opacity(0.3))
+                            notesSection
+                            Divider().background(Color.Surface.a30.opacity(0.3))
+                            priorityPills
+                            Divider().background(Color.Surface.a30.opacity(0.3))
+                            deadlineAndLabelRow
+                        }
                     }
 
-                    formCard {
-                        notesSection
-                    }
-
-                    formCard {
-                        priorityPills
-                    }
-
-                    formCard {
-                        deadlineAndLabelRow
-                    }
-
+                    // Subtasks Card
                     formCard {
                         subtasksSection
                     }
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
                 .padding(.bottom, 8)
             }
         }
         .background(AppColors.background)
-        .frame(width: 350, height: 400)
+        .frame(width: 330, height: 420)
         .onAppear {
             if let d = taskDeadline {
                 deadlineDraft = d
@@ -182,7 +182,7 @@ struct AddTaskView: View {
     }
 
     private var taskNameRow: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             Text("Task Name")
                 .font(.headline)
                 .foregroundColor(.white)
@@ -199,14 +199,14 @@ struct AddTaskView: View {
                         Image(nsImage: app.icon)
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 24, height: 24)
+                            .frame(width: 20, height: 20)
                     } else if !linkURL.isEmpty {
                         LinkIconView(link: linkURL)
-                            .frame(width: 24, height: 24)
+                            .frame(width: 20, height: 20)
                     } else {
                         Image(systemName: "app.badge")
-                            .font(.title3)
-                            .foregroundColor(.secondary)
+                            .font(.body)
+                            .foregroundColor(AppColors.shalyPurple)
                     }
                 }
             }
@@ -237,19 +237,19 @@ struct AddTaskView: View {
     }
 
     private var priorityPills: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Priority")
                 .font(.headline)
                 .foregroundColor(.white)
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 ForEach(TaskPriority.allCases) { p in
                     Button {
                         inputPriority = p
                     } label: {
                         Text(p.shortLabel)
-                            .font(.subheadline.weight(.medium))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
+                            .font(.caption.weight(.medium))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
                             .background(
                                 Capsule()
                                     .fill(inputPriority == p ? p.color.opacity(0.25) : Color.gray.opacity(0.12))
@@ -266,8 +266,8 @@ struct AddTaskView: View {
     }
 
     private var deadlineAndLabelRow: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("Deadline")
                     .font(.headline)
                     .foregroundColor(.white)
@@ -278,24 +278,24 @@ struct AddTaskView: View {
                     Group {
                         if let d = taskDeadline {
                             Text(d, style: .date)
-                                .font(.subheadline.weight(.medium))
+                                .font(.caption.weight(.medium))
                         } else {
                             Text("Deadline")
-                                .font(.body)
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
                     .background(Color.gray.opacity(0.1))
-                    .cornerRadius(10)
+                    .cornerRadius(8)
                 }
                 .buttonStyle(.plain)
             }
             .frame(maxWidth: .infinity)
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("Category")
                     .font(.headline)
                     .foregroundColor(.white)
@@ -308,17 +308,17 @@ struct AddTaskView: View {
                 } label: {
                     HStack {
                         Text(inputCategory.rawValue)
-                            .font(.subheadline.weight(.medium))
+                            .font(.caption.weight(.medium))
                         Spacer()
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
                     .background(Color.gray.opacity(0.1))
-                    .cornerRadius(10)
+                    .cornerRadius(8)
                 }
                 .menuStyle(.borderlessButton)
             }
@@ -660,4 +660,4 @@ struct AddTaskView: View {
 //        )
 //    }
 //}
-
+//

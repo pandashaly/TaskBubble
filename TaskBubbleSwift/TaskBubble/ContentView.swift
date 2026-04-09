@@ -749,10 +749,11 @@ struct TaskDetailView: View {
                 }
                 Text(item.title ?? "Untitled").font(.title2).bold()
                 if let notes = item.notes, !notes.isEmpty {
-                    Text(notes)
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    RichTextEditor(text: .constant(notes))
+                        .frame(minHeight: 60, maxHeight: 120)
+                        .padding(6)
+                        .background(Color.Surface.a10.opacity(0.5))
+                        .cornerRadius(8)
                 }
                 if let deadline = item.deadline {
                     Label("Deadline: \(deadline, style: .date)", systemImage: "calendar").foregroundColor(.secondary)
