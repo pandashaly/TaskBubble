@@ -29,8 +29,12 @@ struct DashboardView: View {
     var body: some View {
         ZStack {
             if isMenuBar {
-                // Menu bar popover: glassy, blends within the popover's own window.
-                VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
+                // Liquid glass effect: ultra-thin material for maximum translucency,
+                // overlaid with a very subtle purple tint to match the app palette.
+                // On macOS 26+, replace this block with .glassEffect() modifier instead.
+                VisualEffectView(material: .fullScreenUI, blendingMode: .behindWindow)
+                    .ignoresSafeArea()
+                Color.Primary.a0.opacity(0.08)
                     .ignoresSafeArea()
             } else {
                 // Standalone floating window: fully opaque dark background.
