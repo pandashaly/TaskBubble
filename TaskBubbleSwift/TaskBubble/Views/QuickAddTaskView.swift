@@ -1,11 +1,34 @@
 import SwiftUI
 
+// 1. Custom ButtonStyle to handle the Hover and Click logic
+struct AppIconButtonStyle: ButtonStyle {
+    let isHovering: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .frame(width: 32, height: 32)
+            // Hover color or default card color
+            .background(isHovering ? AppColors.shalyPurple.opacity(0.1) : AppColors.card)
+            .cornerRadius(6)
+            // Purple overlay that appears ONLY when pressed
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(AppColors.shalyPurple.opacity(configuration.isPressed ? 0.2 : 0))
+            )
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+
 struct QuickAddTaskView: View {
     @Binding var newTaskTitle: String
     @Binding var selectedApp: DetectedApp?
     @Binding var showAppPicker: Bool
     @Binding var linkURL: String
+    
     @State private var isHoveringAppIcon = false
+    @State private var isHoveringAdvanced = false // New hover state
     
     let onAdd: () -> Void
     let onExpand: () -> Void
@@ -15,6 +38,7 @@ struct QuickAddTaskView: View {
     
     var body: some View {
         VStack(spacing: 8) {
+            // Header
             HStack {
                 Text("Quick Add")
                     .font(.headline)
@@ -25,73 +49,320 @@ struct QuickAddTaskView: View {
                 }
                 .buttonStyle(.plain)
             }
-            //.padding(.top, -4)
             
+            // Input Row
             HStack(spacing: 8) {
+                // CUSTOM TEXTFIELD
                 TextField("To Do...", text: $newTaskTitle)
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.plain) // Remove system border
                     .font(.body)
-                    //.background(AppColors.card)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    // --- CHANGE TEXTFIELD COLOR HERE ---
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(4)
+                    // Optional: subtle border for the textfield itself
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                    )
                 
                 Button(action: {
                     appDetectionService.loadInstalledApplications()
                     showAppPicker = true
                 }) {
-                    if let app = selectedApp {
-                        Image(nsImage: app.icon)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 24, height: 24)
-                    } else if !linkURL.isEmpty {
-                        LinkIconView(link: linkURL)
-                            .frame(width: 24, height: 24)
-                    } else {
-                        Image(systemName: "app.badge")
-                            .font(.title3)
-                            .foregroundColor(AppColors.shalyPurple) //TODO fix hover
+                    Group {
+                        if let app = selectedApp {
+                            Image(nsImage: app.icon)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 24, height: 24)
+                        } else if !linkURL.isEmpty {
+                            LinkIconView(link: linkURL)
+                                .frame(width: 24, height: 24)
+                        } else {
+                            Image(systemName: "app.badge")
+                                .font(.title3)
+                                .foregroundColor(AppColors.shalyPurple)
+                        }
                     }
                 }
-                .buttonStyle(.plain)
-                .frame(width: 32, height: 32)
-                .background(isHoveringAppIcon ? AppColors.shalyPurple.opacity(0.03) : AppColors.card)
-                .cornerRadius(6)
+                .buttonStyle(AppIconButtonStyle(isHovering: isHoveringAppIcon))
+                .onHover { isHoveringAppIcon = $0 }
             }
             
+            // Add Task Button
             HStack {
                 Button(action: onAdd) {
                     Text("Add Task")
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
-                        .background(AppColors.shalyPurple)
+                        .background(
+                            newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty ?
+                            AppColors.shalyPurple.opacity(0.5) : AppColors.shalyPurple
+                        )
                         .foregroundColor(.white)
                         .cornerRadius(8)
                 }
                 .buttonStyle(.plain)
-                //.disabled(newTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) TODO -whats this???
+                .disabled(newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             
             Divider()
             
+            // ADVANCED BUTTON WITH HOVER
             Button(action: onExpand) {
                 HStack {
                     Text("Advanced")
                     Image(systemName: "chevron.down")
                 }
                 .fontWeight(.semibold)
-                .foregroundColor(.secondary)
+                // If hovering, turn white; otherwise, secondary (gray)
+                .foregroundColor(isHoveringAdvanced ? .white : .secondary)
+                .padding(.vertical, 6)
                 .frame(maxWidth: .infinity)
+                // Optional: add a slight background so the "white" text is visible if hovered
+                .background(isHoveringAdvanced ? AppColors.shalyPurple.opacity(0.5) : Color.clear)
+                .cornerRadius(6)
             }
             .buttonStyle(.plain)
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isHoveringAdvanced = hovering
+                }
+            }
         }
         .padding(16)
         .frame(width: 300)
         .background(AppColors.background)
-        //.stroke(AppColors.shalyPurple, lineWidth: 1)
         .cornerRadius(12)
-        .shadow(radius: 10)
+        // THE OUTER POPUP BORDER
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(AppColors.card.opacity(0.9), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
     }
 }
+
+//import SwiftUI
+//
+//// 1. Custom ButtonStyle to handle the Hover and Click logic
+//struct AppIconButtonStyle: ButtonStyle {
+//    let isHovering: Bool
+//    
+//    func makeBody(configuration: Configuration) -> some View {
+//        configuration.label
+//            .frame(width: 32, height: 32)
+//            // Hover color or default card color
+//            .background(isHovering ? AppColors.shalyPurple.opacity(0.1) : AppColors.card)
+//            .cornerRadius(6)
+//            // Purple overlay that appears ONLY when pressed
+//            .overlay(
+//                RoundedRectangle(cornerRadius: 6)
+//                    .fill(AppColors.shalyPurple.opacity(configuration.isPressed ? 0.2 : 0))
+//            )
+//            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+//            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+//    }
+//}
+//
+//struct QuickAddTaskView: View {
+//    @Binding var newTaskTitle: String
+//    @Binding var selectedApp: DetectedApp?
+//    @Binding var showAppPicker: Bool
+//    @Binding var linkURL: String
+//    @State private var isHoveringAppIcon = false
+//    
+//    let onAdd: () -> Void
+//    let onExpand: () -> Void
+//    let onCancel: () -> Void
+//    
+//    @ObservedObject var appDetectionService: AppDetectionService
+//    
+//    var body: some View {
+//        VStack(spacing: 8) {
+//            // Header
+//            HStack {
+//                Text("Quick Add")
+//                    .font(.headline)
+//                Spacer()
+//                Button(action: onCancel) {
+//                    Image(systemName: "xmark.circle.fill")
+//                        .foregroundColor(AppColors.shalyPurple)
+//                }
+//                .buttonStyle(.plain)
+//            }
+//            
+//            // Input Row
+//            HStack(spacing: 8) {
+//                TextField("To Do...", text: $newTaskTitle)
+//                    .textFieldStyle(.roundedBorder)
+//                    .font(.body)
+//                
+//                // The App Picker Button
+//                Button(action: {
+//                    appDetectionService.loadInstalledApplications()
+//                    showAppPicker = true
+//                }) {
+//                    Group {
+//                        if let app = selectedApp {
+//                            Image(nsImage: app.icon)
+//                                .resizable()
+//                                .scaledToFit()
+//                                .frame(width: 24, height: 24)
+//                        } else if !linkURL.isEmpty {
+//                            LinkIconView(link: linkURL)
+//                                .frame(width: 24, height: 24)
+//                        } else {
+//                            Image(systemName: "app.badge")
+//                                .font(.title3)
+//                                .foregroundColor(AppColors.shalyPurple)
+//                        }
+//                    }
+//                }
+//                .buttonStyle(AppIconButtonStyle(isHovering: isHoveringAppIcon))
+//                .onHover { hovering in
+//                    isHoveringAppIcon = hovering
+//                }
+//            }
+//            
+//            // Add Task Button
+//            HStack {
+//                Button(action: onAdd) {
+//                    Text("Add Task")
+//                        .fontWeight(.semibold)
+//                        .frame(maxWidth: .infinity)
+//                        .padding(.vertical, 8)
+//                        .background(
+//                            newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty ?
+//                            AppColors.shalyPurple.opacity(0.5) : AppColors.shalyPurple
+//                        )
+//                        .foregroundColor(.white)
+//                        .cornerRadius(8)
+//                }
+//                .buttonStyle(.plain)
+//                .disabled(newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+//            }
+//            
+//            Divider()
+//            
+//            // Advanced Toggle
+//            Button(action: onExpand) {
+//                HStack {
+//                    Text("Advanced")
+//                    Image(systemName: "chevron.down")
+//                }
+//                .fontWeight(.semibold)
+//                .foregroundColor(.secondary)
+//                .padding(.vertical, 4)
+//                .frame(maxWidth: .infinity)
+//            }
+//            .buttonStyle(.plain)
+//        }
+//        .padding(16)
+//        .frame(width: 300)
+//        .background(AppColors.background)
+//        .cornerRadius(12)
+//        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+//    }
+//}
+
+//import SwiftUI
+//
+//struct QuickAddTaskView: View {
+//    @Binding var newTaskTitle: String
+//    @Binding var selectedApp: DetectedApp?
+//    @Binding var showAppPicker: Bool
+//    @Binding var linkURL: String
+//    @State private var isHoveringAppIcon = false
+//    
+//    let onAdd: () -> Void
+//    let onExpand: () -> Void
+//    let onCancel: () -> Void
+//    
+//    @ObservedObject var appDetectionService: AppDetectionService
+//    
+//    var body: some View {
+//        VStack(spacing: 8) {
+//            HStack {
+//                Text("Quick Add")
+//                    .font(.headline)
+//                Spacer()
+//                Button(action: onCancel) {
+//                    Image(systemName: "xmark.circle.fill")
+//                        .foregroundColor(AppColors.shalyPurple)
+//                }
+//                .buttonStyle(.plain)
+//            }
+//            //.padding(.top, -4)
+//            
+//            HStack(spacing: 8) {
+//                TextField("To Do...", text: $newTaskTitle)
+//                    .textFieldStyle(.roundedBorder)
+//                    .font(.body)
+//                    //.background(AppColors.card)
+//                
+//                Button(action: {
+//                    appDetectionService.loadInstalledApplications()
+//                    showAppPicker = true
+//                }) {
+//                    if let app = selectedApp {
+//                        Image(nsImage: app.icon)
+//                            .resizable()
+//                            .scaledToFit()
+//                            .frame(width: 24, height: 24)
+//                    } else if !linkURL.isEmpty {
+//                        LinkIconView(link: linkURL)
+//                            .frame(width: 24, height: 24)
+//                    } else {
+//                        Image(systemName: "app.badge")
+//                            .font(.title3)
+//                            .foregroundColor(AppColors.shalyPurple) //TODO fix hover
+//                    }
+//                }
+//                .buttonStyle(.plain)
+//                .frame(width: 32, height: 32)
+//                .background(isHoveringAppIcon ? AppColors.shalyPurple.opacity(0.03) : AppColors.card)
+//                .cornerRadius(6)
+//            }
+//            
+//            HStack {
+//                Button(action: onAdd) {
+//                    Text("Add Task")
+//                        .fontWeight(.semibold)
+//                        .frame(maxWidth: .infinity)
+//                        .padding(.vertical, 8)
+//                        .background(AppColors.shalyPurple)
+//                        .foregroundColor(.white)
+//                        .cornerRadius(8)
+//                }
+//                .buttonStyle(.plain)
+//                //.disabled(newTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) TODO -whats this???
+//            }
+//            
+//            Divider()
+//            
+//            Button(action: onExpand) {
+//                HStack {
+//                    Text("Advanced")
+//                    Image(systemName: "chevron.down")
+//                }
+//                .fontWeight(.semibold)
+//                .foregroundColor(.secondary)
+//                .frame(maxWidth: .infinity)
+//            }
+//            .buttonStyle(.plain)
+//        }
+//        .padding(16)
+//        .frame(width: 300)
+//        .background(AppColors.background)
+//        //.stroke(AppColors.shalyPurple, lineWidth: 1)
+//        .cornerRadius(12)
+//        .shadow(radius: 10)
+//    }
+//}
 
 //import SwiftUI
 //

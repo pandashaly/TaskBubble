@@ -190,7 +190,7 @@ struct AddTaskView: View {
 
                 Spacer()
 
-                // Removed the empty button that was causing unexpected dismissals
+//                 Removed the empty button that was causing unexpected dismissals
                 Circle()
                     .strokeBorder(Color.secondary.opacity(0.55), lineWidth: 1.5)
                     .frame(width: 30, height: 30)
@@ -228,6 +228,7 @@ struct AddTaskView: View {
             HStack(alignment: .center, spacing: 8) {
                 TextField("To Do...", text: $newTaskTitle)
                     .textFieldStyle(.roundedBorder)
+                    .background(AppColors.card)
                     .font(.body)
                 
                 Button(action: {
