@@ -67,7 +67,7 @@ struct AddTaskView: View {
                     )
             }
             RichTextEditor(text: notesBinding)
-                .frame(minHeight: 60, maxHeight: 100)
+                .frame(minHeight: 60, maxHeight: 120)
                 .padding(6)
                 .background(Color.Surface.a10)
                 .cornerRadius(8)
@@ -81,30 +81,39 @@ struct AddTaskView: View {
     var body: some View {
         VStack(spacing: 0) {
             headerBar
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    // Main Details Card
-                    formCard {
-                        VStack(alignment: .leading, spacing: 12) {
-                            taskNameRow
-                            Divider().background(Color.Surface.a30.opacity(0.3))
-                            notesSection
-                            Divider().background(Color.Surface.a30.opacity(0.3))
-                            priorityPills
-                            Divider().background(Color.Surface.a30.opacity(0.3))
-                            deadlineAndLabelRow
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        // Main Details Card
+                        formCard {
+                            VStack(alignment: .leading, spacing: 12) {
+                                taskNameRow
+                                Divider().background(Color.Surface.a30.opacity(0.3))
+                                notesSection
+                                Divider().background(Color.Surface.a30.opacity(0.3))
+                                priorityPills
+                                Divider().background(Color.Surface.a30.opacity(0.3))
+                                deadlineAndLabelRow
+                            }
                         }
+                        
+                        // Subtasks Card
+                        formCard {
+                            subtasksSection
+                        }
+                        Color.clear
+                            .frame(height: 1)
+                            .id("BOTTOM")
                     }
-
-                    // Subtasks Card
-                    formCard {
-                        subtasksSection
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .padding(.bottom, 8)
+                }
+                .onChange(of: subtaskDrafts.count) { _, _ in
+                    withAnimation {
+                        proxy.scrollTo("BOTTOM", anchor: .bottom)
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .padding(.bottom, 8)
             }
         }
         .background(AppColors.background)
