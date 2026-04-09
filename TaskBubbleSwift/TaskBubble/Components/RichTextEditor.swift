@@ -16,7 +16,11 @@ final class RichTextCoordinator: NSObject, NSTextViewDelegate, ObservableObject 
         guard let tv = textView else { return }
 
         let range = tv.selectedRange()
-        guard range.length > 0 else { return }
+
+        if range.length == 0 {
+            toggleTypingAttributes(format, textView: tv)
+            return
+        }
 
         switch format {
         case .bold:
@@ -34,6 +38,41 @@ final class RichTextCoordinator: NSObject, NSTextViewDelegate, ObservableObject 
         case .code:
             applyCode(in: range, textView: tv)
         }
+    }
+    
+    private func toggleTypingAttributes(_ format: RichTextFormat, textView: NSTextView) {
+        var attrs = textView.typingAttributes
+
+        let currentFont = (attrs[.font] as? NSFont) ?? NSFont.systemFont(ofSize: 12)
+        let manager = NSFontManager.shared
+
+        switch format {
+        case .bold:
+            let hasBold = manager.traits(of: currentFont).contains(.boldFontMask)
+            attrs[.font] = hasBold
+                ? manager.convert(currentFont, toNotHaveTrait: .boldFontMask)
+                : manager.convert(currentFont, toHaveTrait: .boldFontMask)
+
+        case .italic:
+            let hasItalic = manager.traits(of: currentFont).contains(.italicFontMask)
+            attrs[.font] = hasItalic
+                ? manager.convert(currentFont, toNotHaveTrait: .italicFontMask)
+                : manager.convert(currentFont, toHaveTrait: .italicFontMask)
+
+        case .underline:
+            let existing = attrs[.underlineStyle] as? Int ?? 0
+            attrs[.underlineStyle] = existing == 0 ? NSUnderlineStyle.single.rawValue : 0
+
+        case .strikethrough:
+            let existing = attrs[.strikethroughStyle] as? Int ?? 0
+            attrs[.strikethroughStyle] = existing == 0 ? NSUnderlineStyle.single.rawValue : 0
+
+        case .code:
+            attrs[.font] = NSFont(name: "Menlo-Regular", size: 12)
+                ?? NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        }
+
+        textView.typingAttributes = attrs
     }
 
     private func toggleTrait(_ trait: NSFontTraitMask, in range: NSRange, textView: NSTextView) {
