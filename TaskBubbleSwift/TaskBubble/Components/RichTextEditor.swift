@@ -10,6 +10,7 @@ enum RichTextFormat {
 final class RichTextCoordinator: NSObject, NSTextViewDelegate, ObservableObject {
 
     weak var textView: NSTextView?
+    var attributedText = NSMutableAttributedString(string: "")
     var onTextChange: ((String) -> Void)?
 
     func applyFormat(_ format: RichTextFormat) {
@@ -140,6 +141,7 @@ final class RichTextCoordinator: NSObject, NSTextViewDelegate, ObservableObject 
 
     func textDidChange(_ notification: Notification) {
         guard let tv = notification.object as? NSTextView else { return }
+        attributedText = NSMutableAttributedString(attributedString: tv.attributedString())
         onTextChange?(tv.string)
     }
 }
@@ -199,6 +201,17 @@ struct RichTextEditor: NSViewRepresentable {
         textView.textContainerInset = NSSize(width: 4, height: 6)
 
         scrollView.documentView = textView
+        if context.coordinator.attributedText.length == 0 {
+            context.coordinator.attributedText = NSMutableAttributedString(
+                string: text,
+                attributes: [
+                    .font: font,
+                    .foregroundColor: textColor
+                ]
+            )
+        }
+
+        textView.textStorage?.setAttributedString(context.coordinator.attributedText)
 
         return scrollView
     }
@@ -209,7 +222,7 @@ struct RichTextEditor: NSViewRepresentable {
         context.coordinator.textView = textView
 
         if textView.string != text {
-            textView.string = text
+            textView.textStorage?.setAttributedString(context.coordinator.attributedText)
         }
     }
 }
