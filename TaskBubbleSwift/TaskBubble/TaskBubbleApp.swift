@@ -1,3 +1,4 @@
+
 import AppKit
 import SwiftUI
 
@@ -7,36 +8,34 @@ struct TaskBubbleApp: App {
 
     var body: some Scene {
         WindowGroup {
-            mainContent
+            ContentView(isMenuBar: false)
+                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .frame(width: 356, height: 422)
                 .background(FloatingWindowAttacher())
                 .onAppear {
                     window_size()
                 }
         }
-        .windowStyle(.hiddenTitleBar) // Remove title bar for more space
-        .windowResizability(.contentSize) // Keep it fixed to content size
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
 
         MenuBarExtra("TaskBubble", systemImage: "checklist") {
-            mainContent
+            ContentView(isMenuBar: true)
+                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .frame(width: 356, height: 422)
         }
         .menuBarExtraStyle(.window)
-    }
-
-    @ViewBuilder
-    private var mainContent: some View {
-        ContentView()
-            .environment(\.managedObjectContext, persistenceController.container.viewContext)
-            .frame(width: 356, height: 422)
     }
 
     func window_size() {
         if let window = NSApplication.shared.windows.first {
             window.setContentSize(NSSize(width: 356, height: 422))
-            window.styleMask.remove(.resizable) // Disable resizing
-            window.titleVisibility = .hidden // Hide title
+            window.styleMask.remove(.resizable)
+            window.titleVisibility = .hidden
             window.titlebarAppearsTransparent = true
+            // Standalone window stays opaque — solid AppColors.background
+            window.isOpaque = true
             window.backgroundColor = NSColor(Color.Surface.a0)
-            //------
             window.styleMask.insert(.fullSizeContentView)
             window.isMovableByWindowBackground = true
             window.standardWindowButton(.closeButton)?.isHidden = true

@@ -72,6 +72,8 @@ struct ConfettiView: View {
 
 // MARK: - Main Content View
 struct ContentView: View {
+    var isMenuBar: Bool = false
+
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject private var appDetectionService = AppDetectionService()
     
@@ -85,7 +87,8 @@ struct ContentView: View {
     
     private let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
 
-    init() {
+    init(isMenuBar: Bool = false) {
+        self.isMenuBar = isMenuBar
         let context = PersistenceController.shared.container.viewContext
         _waterService = StateObject(wrappedValue: WaterIntakeService(context: context))
     }
@@ -126,9 +129,12 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            AppColors.background
-                .ignoresSafeArea()
-            
+            // Standalone window: always opaque. Menu bar popover: opaque only on subviews (dashboard handles its own glassy bg).
+            if !isMenuBar || currentView != .dashboard {
+                AppColors.background
+                    .ignoresSafeArea()
+            }
+
             VStack(spacing: 0) {
                 switch currentView {
                 case .dashboard:
@@ -146,6 +152,7 @@ struct ContentView: View {
                                 showCalendarDayTasks = true
                             }
                         },
+                        isMenuBar: isMenuBar,
                         onCategoryTap: { category in
                             withAnimation {
                                 selectedCategory = category
@@ -591,12 +598,12 @@ struct TaskRow: View {
 //    @Binding var selectedApp: DetectedApp?
 //    @Binding var isPresented: Bool
 //    @State private var searchText: String = ""
-//    
+//
 //    var body: some View {
 //        VStack {
 //            Text("Select an App").font(.headline).padding(.top)
 //            TextField("Search apps...", text: $searchText).textFieldStyle(RoundedBorderTextFieldStyle()).padding(.horizontal)
-//            
+//
 //            if appDetectionService.isLoading {
 //                Spacer()
 //                ProgressView("Scanning apps...")
@@ -622,7 +629,7 @@ struct TaskRow: View {
 //    @Binding var linkURL: String
 //    @Binding var isPresented: Bool
 //    @State private var tempURL: String = ""
-//    
+//
 //    var body: some View {
 //        VStack(spacing: 16) {
 //            Text("Enter URL").font(.headline)
@@ -800,4 +807,3 @@ struct TaskDetailView: View {
         .background(AppColors.card)
     }
 }
-
