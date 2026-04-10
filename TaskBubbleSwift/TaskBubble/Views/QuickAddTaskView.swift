@@ -67,28 +67,12 @@ struct QuickAddTaskView: View {
                             .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                     )
                 
-                Button(action: {
-                    appDetectionService.loadInstalledApplications()
-                    showAppPicker = true
-                }) {
-                    Group {
-                        if let app = selectedApp {
-                            Image(nsImage: app.icon)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 24, height: 24)
-                        } else if !linkURL.isEmpty {
-                            LinkIconView(link: linkURL)
-                                .frame(width: 24, height: 24)
-                        } else {
-                            Image(systemName: "app.badge")
-                                .font(.title3)
-                                .foregroundColor(AppColors.shalyPurple)
-                        }
-                    }
-                }
-                .buttonStyle(AppIconButtonStyle(isHovering: isHoveringAppIcon))
-                .onHover { isHoveringAppIcon = $0 }
+                AppLinkSelector(
+                        selectedApp: $selectedApp,
+                        showAppPicker: $showAppPicker,
+                        linkURL: $linkURL,
+                        appDetectionService: appDetectionService
+                    )
             }
             
             // Add Task Button

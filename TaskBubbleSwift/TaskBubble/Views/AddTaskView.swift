@@ -114,7 +114,7 @@ struct AddTaskView: View {
                                 Divider().background(Color.Surface.a30.opacity(0.3))
                                 notesSection
                                 Divider().background(Color.Surface.a30.opacity(0.3))
-                                priorityPills
+                                PriorityPills(selection: $inputPriority)
                                 Divider().background(Color.Surface.a30.opacity(0.3))
                                 deadlineAndLabelRow
                             }
@@ -225,78 +225,71 @@ struct AddTaskView: View {
                     //.background(AppColors.card)
                     .font(.body)
                 
-                Button(action: {
-                    appDetectionService.loadInstalledApplications()
-                    showAppPicker = true
-                }) {
-                    if let app = selectedApp {
-                        Image(nsImage: app.icon)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 20, height: 20)
-                    } else if !linkURL.isEmpty {
-                        LinkIconView(link: linkURL)
-                            .frame(width: 20, height: 20)
-                    } else {
-                        Image(systemName: "app.badge")
-                            .font(.body)
-                            .foregroundColor(AppColors.shalyPurple)
-                    }
-                }
+                    AppLinkSelector(
+                        selectedApp: $selectedApp,
+                        showAppPicker: $showAppPicker,
+                        linkURL: $linkURL,
+                        appDetectionService: appDetectionService
+                    )
+                
+// MARK: To delete - old app picker button
+                
+//                Button(action: {
+//                    appDetectionService.loadInstalledApplications()
+//                    showAppPicker = true
+//                }) {
+//                    if let app = selectedApp {
+//                        Image(nsImage: app.icon)
+//                            .resizable()
+//                            .scaledToFit()
+//                            .frame(width: 20, height: 20)
+//                    } else if !linkURL.isEmpty {
+//                        LinkIconView(link: linkURL)
+//                            .frame(width: 20, height: 20)
+//                    } else {
+//                        Image(systemName: "app.badge")
+//                            .font(.body)
+//                            .foregroundColor(AppColors.shalyPurple)
+//                    }
+//                }
             }
         }
     }
 
-    @ViewBuilder
-    private var mainLinkIcon: some View {
-        if let app = selectedApp {
-            Image(nsImage: app.icon)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 28, height: 28)
-        } else if !linkURL.isEmpty {
-            LinkIconView(link: linkURL)
-                .frame(width: 28, height: 28)
+//    @ViewBuilder
+//    private var mainLinkIcon: some View {
+//        if let app = selectedApp {
+//            Image(nsImage: app.icon)
+//                .resizable()
+//                .scaledToFit()
+//                .frame(width: 28, height: 28)
+//        } else if !linkURL.isEmpty {
+//            LinkIconView(link: linkURL)
+//                .frame(width: 28, height: 28)
+//        
+//        } else if let bid = mainLinkBundleIdentifier, let img = appDetectionService.getIcon(for: bid) {
+//            Image(nsImage: img)
+//                .resizable()
+//                .scaledToFit()
+//                .frame(width: 28, height: 28)
+//        } else {
+//            Image(systemName: "link.badge.plus")
+//                .font(.title3)
+//                .foregroundColor(.secondary)
+//        }
+//    }
+
+    struct TaskEditView: View {
+        @State private var inputPriority: TaskPriority = .medium
         
-        } else if let bid = mainLinkBundleIdentifier, let img = appDetectionService.getIcon(for: bid) {
-            Image(nsImage: img)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 28, height: 28)
-        } else {
-            Image(systemName: "link.badge.plus")
-                .font(.title3)
-                .foregroundColor(.secondary)
-        }
-    }
-
-    private var priorityPills: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Priority")
-                .font(.headline)
-                .foregroundColor(.white)
-            HStack(spacing: 6) {
-                ForEach(TaskPriority.allCases) { p in
-                    Button {
-                        inputPriority = p
-                    } label: {
-                        Text(p.shortLabel)
-                            .font(.body)
-                            .frame(maxWidth: .infinity)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(
-                                Capsule()
-                                    .fill(inputPriority == p ? p.color.opacity(0.25) : Color.gray.opacity(0.12))
-                            )
-                            .overlay(
-                                Capsule()
-                                    .stroke(inputPriority == p ? p.color : Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
+        var body: some View {
+            VStack {
+                // Simply call it like this:
+                PriorityPills(selection: $inputPriority)
+                
+                Spacer()
             }
+            .padding()
         }
     }
     

@@ -156,3 +156,63 @@ struct TBStatusPillButton: View {
         .buttonStyle(.plain)
     }
 }
+
+// MARK: - Expandable Button (Advanced)
+struct TBExpandableButton: View {
+    let title: String
+    let icon: String
+    let action: () -> Void
+    var fontSize: CGFloat = 13
+    var horizontalPadding: CGFloat = 16
+    var verticalPadding: CGFloat = 6
+    
+    @State private var isHovering = false
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Text(title)
+                Image(systemName: icon)
+            }
+            .font(.system(size: fontSize, weight: .semibold))
+            .foregroundColor(isHovering ? .white : .secondary)
+            .padding(.vertical, verticalPadding)
+            .padding(.horizontal, horizontalPadding)
+            .frame(maxWidth: .infinity)
+            .background(isHovering ? AppColors.shalyPurple.opacity(0.5) : Color.clear)
+            .cornerRadius(6)
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isHovering = hovering
+            }
+        }
+    }
+}
+
+// MARK: - Circle Icon Button
+struct TBCircleIconButton: View {
+    let icon: String
+    let action: () -> Void
+    var diameter: CGFloat = 24
+    var iconSize: CGFloat = 11
+    var color: Color = AppColors.shalyPurple
+    var filled: Bool = false
+    
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(filled ? Color(nsColor: .textBackgroundColor) : Color(nsColor: .controlBackgroundColor))
+                    .frame(width: diameter, height: diameter)
+                    .overlay(Circle().strokeBorder(Color.gray.opacity(0.32), lineWidth: 0.5))
+                
+                Image(systemName: icon)
+                    .font(.system(size: iconSize, weight: .medium))
+                    .foregroundColor(color)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
