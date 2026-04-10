@@ -45,9 +45,9 @@ struct DashboardView: View {
             VStack(spacing: headerToContentSpacing) {
                 // Top Header
                 HStack(alignment: .center) {
-                    Image(systemName: "bubbles.fill")
-                        .foregroundColor(.white)
-                        .font(.title3)
+//                    Image(systemName: "bubbles.fill")
+//                        .foregroundColor(.white)
+//                        .font(.title3)
                     
                     Text("TaskBubble")
                         .font(.system(size: 20, weight: .bold))

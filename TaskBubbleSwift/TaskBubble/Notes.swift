@@ -5,6 +5,10 @@
 //  Created by Shalyca Sottoriva on 09/04/2026.
 //
 
+
+//. Pro-Tip for "Task Bubble"
+//The design uses Shadows very subtly. To get that "floating" look without it looking messy, use a very light shadow with a high radius:
+//.shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
 // MARK: rounded text fild
 //struct RoundedTextFieldStyle: TextFieldStyle {
 //    func _body(configuration: TextField<Self._Label>) -> some View {

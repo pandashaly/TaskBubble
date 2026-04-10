@@ -6,7 +6,7 @@ import SwiftUI
 public enum TaskCategory: String, CaseIterable, Identifiable {
     case today = "Today"
     case goals = "Goals"
-    case routine = "Routine"
+    case projects = "Projects"
     case allTasks = "All Tasks"
     
     public var id: String { rawValue }
@@ -17,8 +17,8 @@ public enum TaskCategory: String, CaseIterable, Identifiable {
             return "sun.max"
         case .goals:
             return "target"
-        case .routine:
-            return "repeat"
+        case .projects:
+            return "folder.fill"
         case .allTasks:
             return "tray.full"
         }
@@ -30,7 +30,7 @@ public enum TaskCategory: String, CaseIterable, Identifiable {
             return .blue
         case .goals:
             return .green
-        case .routine:
+        case .projects:
             return .orange
         case .allTasks:
             return .purple
@@ -39,7 +39,7 @@ public enum TaskCategory: String, CaseIterable, Identifiable {
 
     /// Categories available when assigning a label (excludes aggregate "All Tasks").
     public static var assignableCategories: [TaskCategory] {
-        [.today, .goals, .routine]
+        [.today, .goals, .projects]
     }
 }
 
