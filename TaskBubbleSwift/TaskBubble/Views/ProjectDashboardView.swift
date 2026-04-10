@@ -771,14 +771,14 @@ struct ProjectFolderCard: View {
             RoundedRectangle(cornerRadius: 8)
                 .fill(project.color.opacity(0.13))
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(project.color.opacity(0.3), lineWidth: 0.7))
-                .frame(width: 86, height: 66)
+                .frame(width: 86, height: 60)
                 .offset(y: 12)
 
             // Folder tab
             HStack(spacing: 0) {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(project.color)
-                    .frame(width: 38, height: 12)
+                    .frame(width: 38, height: 10)
                 Spacer()
             }
             .frame(width: 86)
