@@ -1,183 +1,321 @@
+////
+////  CategoryListView.swift
+////  TaskBubble
+////
 //
-//  CategoryListView.swift
-//  TaskBubble
+//import CoreData
+//import SwiftUI
 //
+//struct CategoryListView: View {
+//    @Environment(\.managedObjectContext) private var viewContext
+//
+//    let category: TaskCategory
+//    let items: [Item]
+//    @Binding var sortOption: TaskSortOption
+//    @ObservedObject var appDetectionService: AppDetectionService
+//    @StateObject private var motivationalService = MotivationalService()
+//    @State private var completedTaskIDs: Set<NSManagedObjectID> = Set<NSManagedObjectID>()
+//
+//    var onBack: () -> Void
+//    var onAddTask: () -> Void
+//    var onSelectTask: (Item) -> Void
+//    var onTaskComplete: (Item, CGPoint) -> Void
+//
+//    var body: some View {
+//        VStack(spacing: 0) {
+//            HStack {
+//                Button(action: onBack) {
+//                    Image(systemName: "chevron.left").font(.headline)
+//                }
+//                .buttonStyle(.plain)
+//                Spacer()
+//                Text(category.rawValue).font(.headline)
+//                Spacer()
+//                Menu {
+//                    Picker("Sort By", selection: $sortOption) {
+//                        ForEach(TaskSortOption.allCases) { option in
+//                            Text(option.rawValue).tag(option)
+//                        }
+//                    }
+//                } label: {
+//                    Image(systemName: "arrow.up.arrow.down").font(.headline)
+//                }
+//                .menuStyle(.borderlessButton)
+//                .fixedSize()
+//
+//                Button(action: onAddTask) {
+//                    Image(systemName: "plus").font(.headline)
+//                }
+//                .buttonStyle(.plain)
+//                .padding(.leading, 8)
+//            }
+//            .padding()
+//            .background(category.color.opacity(0.1))
+//
+//            if category == .allTasks {
+//                achievementBlock
+//            }
+//
+//            let categoryTasks = sortedTasks(items.filter { item in
+//                if category == .allTasks {
+//                    // Include tasks that are not completed OR were just completed (within 2s)
+//                    return !item.completed || completedTaskIDs.contains(item.objectID)
+//                } else {
+//                    return item.category == category.rawValue
+//                }
+//            })
+//            
+//            List {
+//                if categoryTasks.isEmpty {
+//                    Text("No tasks yet!").foregroundColor(.secondary).padding()
+//                } else {
+//                    ForEach(categoryTasks) { item in
+//                        TaskRow(
+//                            item: item,
+//                            onSelect: { onSelectTask(item) },
+//                            onComplete: { location in
+//                                if category == .allTasks {
+//                                    handleTaskCompletion(item, location: location)
+//                                } else {
+//                                    onTaskComplete(item, location)
+//                                }
+//                            },
+//                            appDetectionService: appDetectionService,
+//                            isTemporarilyCompleted: completedTaskIDs.contains(item.objectID)
+//                        )
+//                    }
+//                    .onDelete { offsets in
+//                        offsets.map { categoryTasks[$0] }.forEach(viewContext.delete)
+//                        saveContext()
+//                    }
+//                }
+//            }
+//            .listStyle(.plain)
+//            .scrollContentBackground(.hidden)
+//        }
+//        .background(AppColors.background)
+//    }
+//
+//    private func sortedTasks(_ tasks: [Item]) -> [Item] {
+//        switch sortOption {
+//        case .alphabetical:
+//            return tasks.sorted { ($0.title ?? "") < ($1.title ?? "") }
+//        case .dueDate:
+//            return tasks.sorted {
+//                let d1 = $0.deadline ?? Date.distantFuture
+//                let d2 = $1.deadline ?? Date.distantFuture
+//                return d1 < d2
+//            }
+//        case .priority:
+//            return tasks.sorted { $0.priority > $1.priority }
+//        case .timestamp:
+//            return tasks.sorted { ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) }
+//        }
+//    }
+//
+//    private var achievementBlock: some View {
+//        let completedCount = items.filter { $0.completed }.count
+//        return VStack(spacing: 8) {
+//            HStack {
+//                VStack(alignment: .leading, spacing: 4) {
+//                    Text("You have completed \(completedCount) tasks!")
+//                        .font(.subheadline.weight(.bold))
+//                    
+//                    Text(motivationalService.currentMessage)
+//                        .font(.caption)
+//                        .foregroundColor(.secondary)
+//                        .transition(.opacity)
+//                        .id(motivationalService.currentMessage)
+//                }
+//                Spacer()
+//                Image(systemName: "trophy.fill")
+//                    .font(.title2)
+//                    .foregroundColor(.yellow)
+//            }
+//            .padding(12)
+//            .background(Color.yellow.opacity(0.1))
+//            .cornerRadius(12)
+//            .overlay(
+//                RoundedRectangle(cornerRadius: 12)
+//                    .stroke(Color.yellow.opacity(0.2), lineWidth: 1)
+//            )
+//        }
+//        .padding(.horizontal)
+//        .padding(.top, 12)
+//        .onAppear {
+//            updateMotivation()
+//        }
+//    }
+//
+//    private func updateMotivation() {
+//        let completedToday = items.filter { $0.completed }.count
+//        let remainingToday = items.filter { !$0.completed }.count
+//        motivationalService.updateMessage(completed: completedToday, remaining: remainingToday)
+//    }
+//
+//    private func handleTaskCompletion(_ item: Item, location: CGPoint) {
+//        // Mark as completed in UI immediately
+//        withAnimation {
+//            _ = completedTaskIDs.insert(item.objectID)
+//        }
+//        
+//        // Trigger the confetti and actual completion
+//        onTaskComplete(item, location)
+//        updateMotivation()
+//        
+//        // Remove from list after 2 seconds
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+//            withAnimation {
+//                _ = completedTaskIDs.remove(item.objectID)
+//            }
+//        }
+//    }
+//
+//    private func saveContext() {
+//        do {
+//            try viewContext.save()
+//        } catch {
+//            let nsError = error as NSError
+//            print("Unresolved error \(nsError), \(nsError.userInfo)")
+//            viewContext.rollback()
+//        }
+//    }
+//}
+
+// CategoryListView.swift
+// TaskBubble
 
 import CoreData
 import SwiftUI
 
 struct CategoryListView: View {
     @Environment(\.managedObjectContext) private var viewContext
-
     let category: TaskCategory
     let items: [Item]
     @Binding var sortOption: TaskSortOption
     @ObservedObject var appDetectionService: AppDetectionService
     @StateObject private var motivationalService = MotivationalService()
-    @State private var completedTaskIDs: Set<NSManagedObjectID> = Set<NSManagedObjectID>()
-
+    @State private var completedTaskIDs: Set<NSManagedObjectID> = []
+    @State private var showNavDrawer = false
     var onBack: () -> Void
     var onAddTask: () -> Void
     var onSelectTask: (Item) -> Void
     var onTaskComplete: (Item, CGPoint) -> Void
+    var onNavigate: ((TBPage) -> Void)? = nil
+
+    private var fabLabel: String {
+        switch category {
+        case .today: return "Add task to Today"
+        case .goals: return "Add task to Goals"
+        case .routine: return "Add task to Routine"
+        default: return "Add new task"
+        }
+    }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button(action: onBack) {
-                    Image(systemName: "chevron.left").font(.headline)
-                }
-                .buttonStyle(.plain)
-                Spacer()
-                Text(category.rawValue).font(.headline)
-                Spacer()
-                Menu {
-                    Picker("Sort By", selection: $sortOption) {
-                        ForEach(TaskSortOption.allCases) { option in
-                            Text(option.rawValue).tag(option)
+        ZStack(alignment: .topLeading) {
+            AppColors.background.ignoresSafeArea()
+            VStack(spacing: 0) {
+                TBPageHeader(
+                    title: category.rawValue, icon: category.icon,
+                    onBack: onBack,
+                    onNavDrawer: { withAnimation { showNavDrawer.toggle() } },
+                    onSort: {
+                        let all = TaskSortOption.allCases
+                        if let idx = all.firstIndex(of: sortOption) { sortOption = all[(idx + 1) % all.count] }
+                    },
+                    onAdd: onAddTask, accentColor: category.color
+                )
+                if category == .allTasks { achievementBlock }
+                let categoryTasks = sortedTasks(items.filter { item in
+                    category == .allTasks
+                        ? (!item.completed || completedTaskIDs.contains(item.objectID))
+                        : item.category == category.rawValue
+                })
+                List {
+                    if categoryTasks.isEmpty {
+                        Text("No tasks yet!").font(.custom("Montserrat-Regular", size: 13))
+                            .foregroundColor(Color.Surface.a50).padding()
+                    } else {
+                        ForEach(categoryTasks) { item in
+                            TaskRow(item: item,
+                                    onSelect: { onSelectTask(item) },
+                                    onComplete: { loc in
+                                        if category == .allTasks { handleTaskCompletion(item, location: loc) }
+                                        else { onTaskComplete(item, loc) }
+                                    },
+                                    appDetectionService: appDetectionService,
+                                    isTemporarilyCompleted: completedTaskIDs.contains(item.objectID))
+                        }
+                        .onDelete { offsets in
+                            offsets.map { categoryTasks[$0] }.forEach(viewContext.delete); saveContext()
                         }
                     }
-                } label: {
-                    Image(systemName: "arrow.up.arrow.down").font(.headline)
                 }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-
-                Button(action: onAddTask) {
-                    Image(systemName: "plus").font(.headline)
-                }
-                .buttonStyle(.plain)
-                .padding(.leading, 8)
+                .listStyle(.plain).scrollContentBackground(.hidden)
+                TBAddFAB(label: fabLabel, action: onAddTask)
             }
-            .padding()
-            .background(category.color.opacity(0.1))
-
-            if category == .allTasks {
-                achievementBlock
+            if showNavDrawer {
+                TBNavDrawer(isOpen: $showNavDrawer, currentPage: tbPage(for: category)) { page in
+                    showNavDrawer = false; onNavigate?(page)
+                }.zIndex(20)
             }
-
-            let categoryTasks = sortedTasks(items.filter { item in
-                if category == .allTasks {
-                    // Include tasks that are not completed OR were just completed (within 2s)
-                    return !item.completed || completedTaskIDs.contains(item.objectID)
-                } else {
-                    return item.category == category.rawValue
-                }
-            })
-            
-            List {
-                if categoryTasks.isEmpty {
-                    Text("No tasks yet!").foregroundColor(.secondary).padding()
-                } else {
-                    ForEach(categoryTasks) { item in
-                        TaskRow(
-                            item: item,
-                            onSelect: { onSelectTask(item) },
-                            onComplete: { location in
-                                if category == .allTasks {
-                                    handleTaskCompletion(item, location: location)
-                                } else {
-                                    onTaskComplete(item, location)
-                                }
-                            },
-                            appDetectionService: appDetectionService,
-                            isTemporarilyCompleted: completedTaskIDs.contains(item.objectID)
-                        )
-                    }
-                    .onDelete { offsets in
-                        offsets.map { categoryTasks[$0] }.forEach(viewContext.delete)
-                        saveContext()
-                    }
-                }
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
         }
-        .background(AppColors.background)
+    }
+
+    private func tbPage(for cat: TaskCategory) -> TBPage {
+        switch cat {
+        case .today: return .today;
+        case .goals: return .goals
+        case .routine: return .routine;
+        case .projects: return .projects;
+        case .allTasks: return .allTasks
+        }
     }
 
     private func sortedTasks(_ tasks: [Item]) -> [Item] {
         switch sortOption {
-        case .alphabetical:
-            return tasks.sorted { ($0.title ?? "") < ($1.title ?? "") }
-        case .dueDate:
-            return tasks.sorted {
-                let d1 = $0.deadline ?? Date.distantFuture
-                let d2 = $1.deadline ?? Date.distantFuture
-                return d1 < d2
-            }
-        case .priority:
-            return tasks.sorted { $0.priority > $1.priority }
-        case .timestamp:
-            return tasks.sorted { ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) }
+        case .alphabetical: return tasks.sorted { ($0.title ?? "") < ($1.title ?? "") }
+        case .dueDate: return tasks.sorted { ($0.deadline ?? .distantFuture) < ($1.deadline ?? .distantFuture) }
+        case .priority: return tasks.sorted { $0.priority > $1.priority }
+        case .timestamp: return tasks.sorted { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
         }
     }
 
     private var achievementBlock: some View {
-        let completedCount = items.filter { $0.completed }.count
+        let count = items.filter { $0.completed }.count
         return VStack(spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("You have completed \(completedCount) tasks!")
-                        .font(.subheadline.weight(.bold))
-                    
+                    Text("You've completed \(count) tasks!")
+                        .font(.custom("Montserrat-Bold", size: 13)).foregroundColor(AppColors.textWhite)
                     Text(motivationalService.currentMessage)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .transition(.opacity)
-                        .id(motivationalService.currentMessage)
+                        .font(.custom("Montserrat-Regular", size: 11)).foregroundColor(.secondary)
+                        .transition(.opacity).id(motivationalService.currentMessage)
                 }
                 Spacer()
-                Image(systemName: "trophy.fill")
-                    .font(.title2)
-                    .foregroundColor(.yellow)
+                Image(systemName: "trophy.fill").font(.title2).foregroundColor(.yellow)
             }
-            .padding(12)
-            .background(Color.yellow.opacity(0.1))
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.yellow.opacity(0.2), lineWidth: 1)
-            )
+            .padding(12).background(Color.yellow.opacity(0.08)).cornerRadius(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.yellow.opacity(0.18), lineWidth: 0.5))
         }
-        .padding(.horizontal)
-        .padding(.top, 12)
-        .onAppear {
-            updateMotivation()
-        }
+        .padding(.horizontal, 14).padding(.top, 10).onAppear { updateMotivation() }
     }
 
     private func updateMotivation() {
-        let completedToday = items.filter { $0.completed }.count
-        let remainingToday = items.filter { !$0.completed }.count
-        motivationalService.updateMessage(completed: completedToday, remaining: remainingToday)
+        motivationalService.updateMessage(completed: items.filter { $0.completed }.count,
+                                          remaining: items.filter { !$0.completed }.count)
     }
 
     private func handleTaskCompletion(_ item: Item, location: CGPoint) {
-        // Mark as completed in UI immediately
-        withAnimation {
-            _ = completedTaskIDs.insert(item.objectID)
-        }
-        
-        // Trigger the confetti and actual completion
-        onTaskComplete(item, location)
-        updateMotivation()
-        
-        // Remove from list after 2 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            withAnimation {
-                _ = completedTaskIDs.remove(item.objectID)
-            }
+        withAnimation { _ = completedTaskIDs.insert(item.objectID) }
+        onTaskComplete(item, location); updateMotivation()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation { _ = completedTaskIDs.remove(item.objectID) }
         }
     }
 
     private func saveContext() {
-        do {
-            try viewContext.save()
-        } catch {
-            let nsError = error as NSError
-            print("Unresolved error \(nsError), \(nsError.userInfo)")
-            viewContext.rollback()
-        }
+        do { try viewContext.save() } catch { viewContext.rollback() }
     }
 }
