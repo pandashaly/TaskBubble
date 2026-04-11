@@ -6,11 +6,15 @@
 //
 
 // ADHD-friendly batch focus mode. Select up to 10 tasks, set a timer, execute in focused mode.
+// BatchProductivityView.swift
+// TaskBubble
+// BatchProductivityView.swift
+// TaskBubble
 
 import CoreData
 import SwiftUI
 
-// MARK: - Entry point: task selector
+// MARK: - Entry / task selector
 
 struct BatchProductivityEntryView: View {
     let items: [Item]
@@ -21,142 +25,142 @@ struct BatchProductivityEntryView: View {
     @State private var selected: Set<NSManagedObjectID> = []
     @State private var timerMinutes: Int = 25
     @State private var showSession = false
-    @State private var showWarning = false
 
-    private var availableTasks: [Item] {
+    private var available: [Item] {
         items.filter { !$0.completed }
             .sorted { ($0.timestamp ?? .distantPast) > ($1.timestamp ?? .distantPast) }
+    }
+
+    private var warningMessage: String? {
+        if selected.count > 5 {
+            return "More than 5 tasks? Studies show that's a recipe for procrastination. Try 3–5 for best focus."
+        }
+        return nil
     }
 
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Batch Productivity")
-                        .font(.custom("Montserrat-Bold", size: 16))
-                        .foregroundColor(AppColors.textWhite)
-                    Text("Select tasks · Set timer · Focus")
-                        .font(.custom("Montserrat-Regular", size: 11))
-                        .foregroundColor(Color.Surface.a50)
+                Button { dismiss() } label: {
+                    ZStack {
+                        Circle().fill(Color.Surface.a20.opacity(0.4)).frame(width: 24, height: 24)
+                        Image(systemName: "xmark").font(.system(size: 9, weight: .bold)).foregroundColor(Color.Surface.a60)
+                    }
+                }.buttonStyle(.plain)
+
+                Spacer()
+                VStack(spacing: 1) {
+                    Text("Batch Focus")
+                        .font(.custom("Montserrat-Bold", size: 15)).foregroundColor(AppColors.textWhite)
+                    Text("Select · Time · Execute")
+                        .font(.custom("Montserrat-Regular", size: 9)).foregroundColor(Color.Surface.a50)
                 }
                 Spacer()
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16)).foregroundColor(Color.Surface.a40)
+
+                ZStack {
+                    Capsule()
+                        .fill(selected.isEmpty ? Color.Surface.a20.opacity(0.4) : AppColors.shalyPurple.opacity(0.2))
+                        .frame(width: 36, height: 24)
+                    Text("\(selected.count)/10")
+                        .font(.custom("Montserrat-Bold", size: 10))
+                        .foregroundColor(selected.isEmpty ? Color.Surface.a50 : AppColors.shalyPurple)
                 }
-                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 10)
+            .padding(.horizontal, 14).padding(.vertical, 11)
             .background(Color.Surface.a10)
 
             Divider().background(Color.Surface.a30.opacity(0.4))
 
-            // Timer picker
-            VStack(alignment: .leading, spacing: 6) {
-                Text("SESSION DURATION")
-                    .font(.custom("Montserrat-Bold", size: 9))
-                    .foregroundColor(Color.Surface.a50).tracking(0.8)
-                HStack(spacing: 8) {
-                    ForEach([15, 25, 45, 60], id: \.self) { min in
-                        Button { timerMinutes = min } label: {
-                            Text("\(min)m")
-                                .font(.custom("Montserrat-Bold", size: 11))
-                                .padding(.horizontal, 12).padding(.vertical, 5)
-                                .background(Capsule().fill(timerMinutes == min
-                                    ? AppColors.shalyPurple : Color.Surface.a20.opacity(0.4)))
-                                .foregroundColor(timerMinutes == min ? .white : Color.Surface.a60)
-                        }
-                        .buttonStyle(.plain)
-                    }
+            // Timer selection
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("SESSION DURATION")
+                        .font(.custom("Montserrat-Bold", size: 9)).foregroundColor(Color.Surface.a50).tracking(0.7)
                     Spacer()
-                    Text("Custom:")
-                        .font(.custom("Montserrat-Regular", size: 11))
-                        .foregroundColor(Color.Surface.a50)
-                    Stepper("", value: $timerMinutes, in: 5...120, step: 5)
-                        .labelsHidden()
-                        .frame(width: 80)
+                    Text("\(timerMinutes) min")
+                        .font(.custom("Montserrat-Bold", size: 12)).foregroundColor(AppColors.shalyPurple)
+                }
+                HStack(spacing: 6) {
+                    ForEach([15, 25, 45, 60], id: \.self) { m in
+                        Button { timerMinutes = m } label: {
+                            Text("\(m)m")
+                                .font(.custom("Montserrat-Bold", size: 11))
+                                .frame(maxWidth: .infinity).padding(.vertical, 6)
+                                .background(Capsule().fill(timerMinutes == m ? AppColors.shalyPurple : Color.Surface.a20.opacity(0.4)))
+                                .foregroundColor(timerMinutes == m ? .white : Color.Surface.a60)
+                        }.buttonStyle(.plain)
+                    }
                 }
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
 
             Divider().background(Color.Surface.a30.opacity(0.3))
 
-            // Selection info
-            HStack {
-                Text("SELECT TASKS")
-                    .font(.custom("Montserrat-Bold", size: 9))
-                    .foregroundColor(Color.Surface.a50).tracking(0.8)
-                Spacer()
-                if !selected.isEmpty {
-                    Text("\(selected.count)/10 selected")
-                        .font(.custom("Montserrat-SemiBold", size: 10))
-                        .foregroundColor(selected.count > 5 ? Color.Warning.a10 : AppColors.shalyPurple)
-                }
-            }
-            .padding(.horizontal, 14).padding(.top, 8).padding(.bottom, 4)
-
-            if selected.count > 5 {
+            // Warning pill
+            if let warning = warningMessage {
                 HStack(spacing: 6) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 10)).foregroundColor(Color.Warning.a10)
-                    Text("Too many tasks can make it harder to focus. 3–5 works best!")
-                        .font(.custom("Montserrat-Regular", size: 10))
-                        .foregroundColor(Color.Warning.a10)
+                    Text(warning)
+                        .font(.custom("Montserrat-Regular", size: 10)).foregroundColor(Color.Warning.a10)
+                        .lineLimit(2)
                 }
-                .padding(.horizontal, 14).padding(.bottom, 6)
+                .padding(.horizontal, 14).padding(.vertical, 7)
+                .background(Color.Warning.a20.opacity(0.2))
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             // Task list
             ScrollView(showsIndicators: false) {
                 LazyVStack(spacing: 4) {
-                    ForEach(availableTasks) { item in
-                        BatchTaskSelectionRow(
-                            item: item,
-                            isSelected: selected.contains(item.objectID),
-                            canSelect: selected.count < 10 || selected.contains(item.objectID),
-                            onTap: { toggle(item) }
-                        )
-                        .padding(.horizontal, 14)
+                    if available.isEmpty {
+                        Text("No tasks available")
+                            .font(.custom("Montserrat-Regular", size: 12)).foregroundColor(Color.Surface.a50)
+                            .padding(.top, 20)
+                    } else {
+                        ForEach(available) { item in
+                            BatchSelectRow(
+                                item: item,
+                                isSelected: selected.contains(item.objectID),
+                                canSelect: selected.count < 10 || selected.contains(item.objectID),
+                                onTap: { toggle(item) }
+                            )
+                            .padding(.horizontal, 14)
+                        }
                     }
                 }
                 .padding(.vertical, 6)
             }
 
             // Start button
-            Button {
-                if selected.isEmpty { return }
-                showSession = true
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "timer").font(.system(size: 13))
-                    Text(selected.isEmpty
-                         ? "Select at least 1 task"
-                         : "Start \(timerMinutes)m focus session")
-                        .font(.custom("Montserrat-Bold", size: 12))
+            VStack(spacing: 0) {
+                Divider().background(Color.Surface.a30.opacity(0.4))
+                Button {
+                    guard !selected.isEmpty else { return }
+                    showSession = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "timer").font(.system(size: 13))
+                        Text(selected.isEmpty ? "Select at least 1 task" : "Start \(timerMinutes)min focus session")
+                            .font(.custom("Montserrat-Bold", size: 12))
+                    }
+                    .foregroundColor(selected.isEmpty ? Color.Surface.a50 : .white)
+                    .frame(maxWidth: .infinity).padding(.vertical, 11)
+                    .background(Capsule().fill(selected.isEmpty ? Color.Surface.a20.opacity(0.5) : AppColors.shalyPurple))
                 }
-                .foregroundColor(selected.isEmpty ? Color.Surface.a50 : .white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 11)
-                .background(
-                    Capsule().fill(selected.isEmpty
-                        ? Color.Surface.a20.opacity(0.5)
-                        : AppColors.shalyPurple)
-                )
+                .buttonStyle(.plain).disabled(selected.isEmpty)
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .background(AppColors.background)
             }
-            .buttonStyle(.plain)
-            .disabled(selected.isEmpty)
-            .padding(.horizontal, 14).padding(.vertical, 10)
-            .background(AppColors.background)
-            .overlay(Rectangle().frame(height: 0.5).foregroundColor(Color.Surface.a30.opacity(0.4)), alignment: .top)
         }
         .background(AppColors.background)
         .frame(width: 340, height: 480)
         .animation(.easeInOut(duration: 0.2), value: selected.count)
+        // ← Use sheet instead of fullScreenCover (macOS doesn't support fullScreenCover)
         .sheet(isPresented: $showSession) {
             BatchSessionView(
-                tasks: availableTasks.filter { selected.contains($0.objectID) },
+                tasks: available.filter { selected.contains($0.objectID) },
                 durationSeconds: timerMinutes * 60,
                 onDismiss: { showSession = false; dismiss() }
             )
@@ -165,21 +169,16 @@ struct BatchProductivityEntryView: View {
     }
 
     private func toggle(_ item: Item) {
-        if selected.contains(item.objectID) {
-            selected.remove(item.objectID)
-        } else if selected.count < 10 {
-            selected.insert(item.objectID)
-        }
+        if selected.contains(item.objectID) { selected.remove(item.objectID) }
+        else if selected.count < 10 { selected.insert(item.objectID) }
     }
 }
 
 // MARK: - Selection row
 
-struct BatchTaskSelectionRow: View {
+struct BatchSelectRow: View {
     @ObservedObject var item: Item
-    let isSelected: Bool
-    let canSelect: Bool
-    let onTap: () -> Void
+    let isSelected: Bool; let canSelect: Bool; let onTap: () -> Void
 
     var body: some View {
         Button(action: onTap) {
@@ -189,16 +188,13 @@ struct BatchTaskSelectionRow: View {
                         .stroke(isSelected ? AppColors.shalyPurple : Color.Surface.a30, lineWidth: 1.5)
                         .frame(width: 16, height: 16)
                     if isSelected {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(AppColors.shalyPurple).frame(width: 16, height: 16)
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 8, weight: .bold)).foregroundColor(.white)
+                        RoundedRectangle(cornerRadius: 3).fill(AppColors.shalyPurple).frame(width: 16, height: 16)
+                        Image(systemName: "checkmark").font(.system(size: 8, weight: .bold)).foregroundColor(.white)
                     }
                 }
-
                 VStack(alignment: .leading, spacing: 1) {
                     Text(item.title ?? "Untitled")
-                        .font(.custom("Montserrat-SemiBold", size: 12))
+                        .font(.custom("Montserrat-SemiBold", size: 11))
                         .foregroundColor(canSelect || isSelected ? AppColors.textWhite : Color.Surface.a40)
                         .lineLimit(1)
                     HStack(spacing: 5) {
@@ -211,17 +207,11 @@ struct BatchTaskSelectionRow: View {
                         }
                     }
                 }
-
                 Spacer()
-
-                Circle()
-                    .fill(priorityColor)
-                    .frame(width: 6, height: 6)
+                Circle().fill(priorityColor).frame(width: 6, height: 6)
             }
             .padding(.vertical, 8).padding(.horizontal, 10)
-            .background(isSelected
-                ? AppColors.shalyPurple.opacity(0.12)
-                : AppColors.card)
+            .background(isSelected ? AppColors.shalyPurple.opacity(0.12) : AppColors.card)
             .cornerRadius(8)
             .overlay(RoundedRectangle(cornerRadius: 8)
                 .stroke(isSelected ? AppColors.shalyPurple.opacity(0.4) : Color.Surface.a30.opacity(0.3), lineWidth: 0.5))
@@ -239,7 +229,7 @@ struct BatchTaskSelectionRow: View {
     }
 }
 
-// MARK: - Active session view
+// MARK: - Active session
 
 struct BatchSessionView: View {
     let tasks: [Item]
@@ -260,18 +250,19 @@ struct BatchSessionView: View {
         _secondsLeft = State(initialValue: durationSeconds)
     }
 
-    private var progress: CGFloat {
+    private var elapsed: CGFloat {
         guard durationSeconds > 0 else { return 0 }
         return CGFloat(durationSeconds - secondsLeft) / CGFloat(durationSeconds)
     }
-
     private var timeString: String {
-        let m = secondsLeft / 60; let s = secondsLeft % 60
-        return String(format: "%02d:%02d", m, s)
+        String(format: "%02d:%02d", secondsLeft / 60, secondsLeft % 60)
     }
-
-    private var allDone: Bool {
-        tasks.allSatisfy { completedIDs.contains($0.objectID) }
+    private var currentTask: Item? {
+        tasks.first { !completedIDs.contains($0.objectID) }
+    }
+    private var taskProgress: CGFloat {
+        guard !tasks.isEmpty else { return 0 }
+        return CGFloat(completedIDs.count) / CGFloat(tasks.count)
     }
 
     var body: some View {
@@ -279,13 +270,13 @@ struct BatchSessionView: View {
             AppColors.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Session header
+                // Header
                 HStack {
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: 1) {
                         Text("Focus Session")
-                            .font(.custom("Montserrat-Bold", size: 15)).foregroundColor(AppColors.textWhite)
-                        Text("\(tasks.count) tasks · \(durationSeconds / 60)m session")
-                            .font(.custom("Montserrat-Regular", size: 11)).foregroundColor(Color.Surface.a50)
+                            .font(.custom("Montserrat-Bold", size: 14)).foregroundColor(AppColors.textWhite)
+                        Text("\(tasks.count) tasks · \(durationSeconds / 60)min")
+                            .font(.custom("Montserrat-Regular", size: 10)).foregroundColor(Color.Surface.a50)
                     }
                     Spacer()
                     Button(action: onDismiss) {
@@ -294,93 +285,115 @@ struct BatchSessionView: View {
                             .padding(.horizontal, 10).padding(.vertical, 5)
                             .background(Capsule().fill(Color.Danger.a20.opacity(0.4)))
                             .overlay(Capsule().stroke(Color.Danger.a10.opacity(0.4), lineWidth: 0.5))
-                    }
-                    .buttonStyle(.plain)
+                    }.buttonStyle(.plain)
                 }
-                .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 10)
+                .padding(.horizontal, 14).padding(.vertical, 12)
                 .background(Color.Surface.a10)
 
                 Divider().background(Color.Surface.a30.opacity(0.4))
 
-                // Timer ring
-                VStack(spacing: 6) {
+                // Timer + task progress hero
+                HStack(spacing: 16) {
+                    // Timer ring
                     ZStack {
+                        Circle().stroke(Color.Surface.a20.opacity(0.4), lineWidth: 7).frame(width: 90, height: 90)
                         Circle()
-                            .stroke(Color.Surface.a20.opacity(0.4), lineWidth: 8)
-                        Circle()
-                            .trim(from: 0, to: progress)
+                            .trim(from: 0, to: 1 - elapsed)
                             .stroke(
                                 secondsLeft < 60 ? Color.Danger.a0 : AppColors.shalyPurple,
-                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                                style: StrokeStyle(lineWidth: 7, lineCap: .round)
                             )
+                            .frame(width: 90, height: 90)
                             .rotationEffect(.degrees(-90))
-                            .animation(.linear(duration: 0.5), value: progress)
-                        VStack(spacing: 2) {
+                            .animation(.linear(duration: 0.5), value: elapsed)
+                        VStack(spacing: 1) {
                             Text(timeString)
-                                .font(.custom("Montserrat-Bold", size: 28))
+                                .font(.custom("Montserrat-Bold", size: 22))
                                 .foregroundColor(secondsLeft < 60 ? Color.Danger.a0 : AppColors.textWhite)
                                 .monospacedDigit()
                             Text(isRunning ? "focusing" : "paused")
-                                .font(.custom("Montserrat-Regular", size: 11))
-                                .foregroundColor(Color.Surface.a50)
+                                .font(.custom("Montserrat-Regular", size: 9)).foregroundColor(Color.Surface.a50)
                         }
                     }
-                    .frame(width: 130, height: 130)
 
-                    // Pause/resume
-                    Button { isRunning.toggle() } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: isRunning ? "pause.fill" : "play.fill").font(.system(size: 11))
-                            Text(isRunning ? "Pause" : "Resume").font(.custom("Montserrat-SemiBold", size: 11))
+                    VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text("\(completedIDs.count)/\(tasks.count) done")
+                                    .font(.custom("Montserrat-SemiBold", size: 11)).foregroundColor(AppColors.textWhite)
+                                Spacer()
+                                Text("\(Int(taskProgress * 100))%")
+                                    .font(.custom("Montserrat-Bold", size: 11)).foregroundColor(Color.Success.a0)
+                            }
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 99).fill(Color.Surface.a20.opacity(0.4)).frame(height: 4)
+                                    RoundedRectangle(cornerRadius: 99).fill(Color.Success.a0)
+                                        .frame(width: geo.size.width * taskProgress, height: 4)
+                                        .animation(.spring(), value: taskProgress)
+                                }
+                            }.frame(height: 4)
                         }
-                        .foregroundColor(AppColors.shalyPurple)
-                        .padding(.horizontal, 14).padding(.vertical, 6)
-                        .background(Capsule().fill(AppColors.shalyPurple.opacity(0.12)))
-                        .overlay(Capsule().stroke(AppColors.shalyPurple.opacity(0.3), lineWidth: 0.5))
+
+                        Button { isRunning.toggle() } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: isRunning ? "pause.fill" : "play.fill").font(.system(size: 10))
+                                Text(isRunning ? "Pause" : "Resume").font(.custom("Montserrat-SemiBold", size: 11))
+                            }
+                            .foregroundColor(AppColors.shalyPurple)
+                            .padding(.horizontal, 12).padding(.vertical, 5)
+                            .background(Capsule().fill(AppColors.shalyPurple.opacity(0.12)))
+                            .overlay(Capsule().stroke(AppColors.shalyPurple.opacity(0.3), lineWidth: 0.5))
+                        }.buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
-                .padding(.vertical, 14)
+                .padding(.horizontal, 16).padding(.vertical, 14)
+                .background(AppColors.shalyPurple.opacity(0.06))
 
                 Divider().background(Color.Surface.a30.opacity(0.3))
 
-                // Progress summary
-                HStack(spacing: 6) {
-                    Text("\(completedIDs.count)/\(tasks.count) done")
-                        .font(.custom("Montserrat-SemiBold", size: 12)).foregroundColor(AppColors.textWhite)
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 99).fill(Color.Surface.a20.opacity(0.4)).frame(height: 4)
-                            RoundedRectangle(cornerRadius: 99)
-                                .fill(Color.Success.a0)
-                                .frame(width: tasks.isEmpty ? 0 : geo.size.width * CGFloat(completedIDs.count) / CGFloat(tasks.count), height: 4)
-                                .animation(.spring(), value: completedIDs.count)
-                        }
-                    }
-                    .frame(height: 4)
-                }
-                .padding(.horizontal, 14).padding(.vertical, 8)
-
                 // Task list
                 ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 5) {
+                    LazyVStack(spacing: 4) {
                         ForEach(tasks) { item in
+                            let isDone = completedIDs.contains(item.objectID)
+                            let isCurrent = item.objectID == currentTask?.objectID
                             SessionTaskRow(
                                 item: item,
-                                isDone: completedIDs.contains(item.objectID),
+                                isDone: isDone,
+                                isCurrent: isCurrent,
                                 onComplete: { markDone(item) }
                             )
                             .padding(.horizontal, 14)
                         }
+                    }.padding(.vertical, 8)
+                }
+
+                // Mark done FAB
+                VStack(spacing: 0) {
+                    Divider().background(Color.Surface.a30.opacity(0.4))
+                    if let curr = currentTask {
+                        let taskTitle = curr.title ?? "task"
+                        Button { markDone(curr) } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "checkmark.circle.fill").font(.system(size: 13))
+                                Text("Done with \"\(taskTitle)\"")
+                                    .font(.custom("Montserrat-Bold", size: 11)).lineLimit(1)
+                            }
+                            .foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 10)
+                            .background(Capsule().fill(Color.Success.a0))
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 14).padding(.vertical, 9)
+                        .background(AppColors.background)
                     }
-                    .padding(.vertical, 6)
                 }
             }
 
             if showCelebration {
                 CelebrationOverlay {
                     showCelebration = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { onDismiss() }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onDismiss() }
                 }
             }
         }
@@ -405,27 +418,34 @@ struct BatchSessionView: View {
     }
 }
 
+// MARK: - Session task row
+
 struct SessionTaskRow: View {
     @ObservedObject var item: Item
     let isDone: Bool
+    let isCurrent: Bool
     let onComplete: () -> Void
 
     var body: some View {
         HStack(spacing: 9) {
             Button(action: onComplete) {
                 ZStack {
-                    Circle().stroke(isDone ? Color.Success.a0 : Color.Surface.a30, lineWidth: 1.5).frame(width: 18, height: 18)
+                    Circle()
+                        .stroke(
+                            isDone ? Color.Success.a0 : (isCurrent ? AppColors.shalyPurple : Color.Surface.a30),
+                            lineWidth: 1.5
+                        )
+                        .frame(width: 17, height: 17)
                     if isDone {
-                        Circle().fill(Color.Success.a0.opacity(0.15)).frame(width: 18, height: 18)
+                        Circle().fill(Color.Success.a0.opacity(0.15)).frame(width: 17, height: 17)
                         Image(systemName: "checkmark").font(.system(size: 8, weight: .bold)).foregroundColor(Color.Success.a0)
                     }
                 }
-            }
-            .buttonStyle(.plain)
+            }.buttonStyle(.plain)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(item.title ?? "Untitled")
-                    .font(.custom("Montserrat-SemiBold", size: 12))
+                    .font(.custom("Montserrat-SemiBold", size: 11))
                     .foregroundColor(isDone ? Color.Surface.a50 : AppColors.textWhite)
                     .strikethrough(isDone).lineLimit(1)
                 if let cat = item.category {
@@ -433,16 +453,32 @@ struct SessionTaskRow: View {
                 }
             }
             Spacer()
+
+            if isCurrent && !isDone {
+                Text("NOW")
+                    .font(.custom("Montserrat-Bold", size: 8)).foregroundColor(AppColors.shalyPurple)
+                    .padding(.horizontal, 5).padding(.vertical, 2)
+                    .background(Capsule().fill(AppColors.shalyPurple.opacity(0.15)))
+            }
             if isDone {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 14)).foregroundColor(Color.Success.a0)
+                Image(systemName: "checkmark.circle.fill").font(.system(size: 13)).foregroundColor(Color.Success.a0)
             }
         }
         .padding(.vertical, 9).padding(.horizontal, 12)
-        .background(isDone ? Color.Success.a20.opacity(0.15) : AppColors.card)
+        .background(
+            isCurrent && !isDone
+                ? AppColors.shalyPurple.opacity(0.09)
+                : (isDone ? Color.Success.a20.opacity(0.1) : AppColors.card)
+        )
         .cornerRadius(9)
         .overlay(RoundedRectangle(cornerRadius: 9)
-            .stroke(isDone ? Color.Success.a0.opacity(0.3) : Color.Surface.a30.opacity(0.35), lineWidth: 0.5))
+            .stroke(
+                isCurrent && !isDone
+                    ? AppColors.shalyPurple.opacity(0.3)
+                    : (isDone ? Color.Success.a0.opacity(0.2) : Color.Surface.a30.opacity(0.35)),
+                lineWidth: 0.5
+            )
+        )
         .animation(.easeInOut(duration: 0.2), value: isDone)
     }
 }
@@ -455,23 +491,20 @@ struct CelebrationOverlay: View {
         ZStack {
             Color.black.opacity(0.6).ignoresSafeArea()
             VStack(spacing: 12) {
-                Text("🎉").font(.system(size: 48))
+                Text("🎉").font(.system(size: 44))
                 Text("Session complete!")
-                    .font(.custom("Montserrat-Bold", size: 18)).foregroundColor(AppColors.textWhite)
-                Text("Amazing work. You crushed it.")
-                    .font(.custom("Montserrat-Regular", size: 13)).foregroundColor(Color.Surface.a60)
+                    .font(.custom("Montserrat-Bold", size: 17)).foregroundColor(AppColors.textWhite)
+                Text("You crushed it. Every task done.")
+                    .font(.custom("Montserrat-Regular", size: 12)).foregroundColor(Color.Surface.a60)
                 Button(action: onDismiss) {
                     Text("Done")
-                        .font(.custom("Montserrat-Bold", size: 13)).foregroundColor(.white)
+                        .font(.custom("Montserrat-Bold", size: 12)).foregroundColor(.white)
                         .padding(.horizontal, 28).padding(.vertical, 10)
                         .background(Capsule().fill(AppColors.shalyPurple))
                 }
-                .buttonStyle(.plain)
-                .padding(.top, 4)
+                .buttonStyle(.plain).padding(.top, 4)
             }
-            .padding(24)
-            .background(Color.Surface.a10)
-            .cornerRadius(16)
+            .padding(24).background(Color.Surface.a10).cornerRadius(16)
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppColors.shalyPurple.opacity(0.3), lineWidth: 0.5))
         }
     }

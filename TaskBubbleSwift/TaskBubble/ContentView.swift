@@ -769,10 +769,486 @@
 //}
 //
 
+//
+//import SwiftUI
+//import CoreData
+//import AppKit
+//
+//struct ConfettiPiece: Identifiable {
+//    let id = UUID()
+//    var x: CGFloat; var y: CGFloat; var vx: CGFloat; var vy: CGFloat
+//    var color: Color; var size: CGFloat; var rotation: Double; var opacity: Double
+//}
+//
+//struct ConfettiView: View {
+//    @Binding var isFinished: Bool
+//    var origin: CGPoint
+//    @State private var pieces: [ConfettiPiece] = []
+//    let timer = Timer.publish(every: 0.02, on: .main, in: .common).autoconnect()
+//    var body: some View {
+//        ZStack {
+//            ForEach(pieces) { p in
+//                Rectangle().fill(p.color).frame(width: p.size, height: p.size)
+//                    .position(x: p.x, y: p.y).rotationEffect(.degrees(p.rotation)).opacity(p.opacity)
+//            }
+//        }
+//        .onAppear { createExplosion() }
+//        .onReceive(timer) { _ in update() }
+//    }
+//    private func createExplosion() {
+//        let colors: [Color] = [.red,.blue,.green,.yellow,.pink,.purple,.orange,.cyan,.mint]
+//        for _ in 0..<50 {
+//            let a = Double.random(in: -.pi*0.75 ... -.pi*0.25)
+//            let s = Double.random(in: 4...12)
+//            pieces.append(ConfettiPiece(x: origin.x, y: origin.y, vx: CGFloat(cos(a)*s), vy: CGFloat(sin(a)*s),
+//                color: colors.randomElement() ?? .blue, size: .random(in: 4...10), rotation: .random(in: 0...360), opacity: 1))
+//        }
+//    }
+//    private func update() {
+//        for i in 0..<pieces.count {
+//            pieces[i].x += pieces[i].vx; pieces[i].y += pieces[i].vy
+//            pieces[i].vy += 0.25; pieces[i].rotation += 20; pieces[i].opacity -= 0.012
+//        }
+//        pieces.removeAll { $0.opacity <= 0 || $0.y > 422 || $0.x < 0 || $0.x > 356 }
+//        if pieces.isEmpty { isFinished = false }
+//    }
+//}
+//
+//struct ContentView: View {
+//    @Environment(\.managedObjectContext) private var viewContext
+//    @StateObject private var appDetectionService = AppDetectionService()
+//    @FetchRequest<Item>(sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)], animation: .default)
+//    private var items: FetchedResults<Item>
+//    @StateObject private var waterService: WaterIntakeService
+//    private let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+//    init() {
+//        _waterService = StateObject(wrappedValue: WaterIntakeService(context: PersistenceController.shared.container.viewContext))
+//    }
+//    @State private var currentView: AppView = .dashboard
+//    @State private var selectedCategory: TaskCategory? = nil
+//    @State private var selectedProject: Project? = nil
+//    @State private var pendingProjectForTask: Project? = nil
+//    @State private var showConfetti = false
+//    @State private var confettiOrigin: CGPoint = .zero
+//    @State private var selectedTask: Item? = nil
+//    @State private var showTaskSearch = false
+//    @State private var calendarScope: TaskCalendarScope = .week
+//    @State private var showCalendarDayTasks = false
+//    @State private var calendarSheetDate = Date()
+//    @State private var calendarDayTasks: [Item] = []
+//    @State private var calendarAddDay: Date?
+//    @State private var showCalendarAddConfirm = false
+//    @State private var showProjectInfo = false
+//    @State private var editingProject: Project? = nil
+//    @State private var newTaskTitle = ""
+//    @State private var taskNotes = ""
+//    @State private var inputCategory: TaskCategory = .today
+//    @State private var inputPriority: TaskPriority = .medium
+//    @State private var taskDeadline: Date? = nil
+//    @State private var showAppPicker = false
+//    @State private var showLinkInput = false
+//    @State private var selectedApp: DetectedApp? = nil
+//    @State private var linkURL = ""
+//    @State private var mainLinkBundleIdentifier: String? = nil
+//    @State private var subtaskDrafts: [SubtaskDraft] = []
+//    @State private var activeSubtaskID: UUID? = nil
+//    @State private var editingTask: Item? = nil
+//    @State private var showQuickAdd = false
+//    @State private var sortOption: TaskSortOption = .timestamp
+//    enum AppView { case dashboard, categoryList, projectDashboard, projectDetail, addTask }
+//    var body: some View {
+//        ZStack {
+//            AppColors.background.ignoresSafeArea()
+//            VStack(spacing: 0) {
+//                switch currentView {
+//                case .dashboard:
+//                    DashboardView(
+//                        waterService: waterService, items: Array(items), calendarScope: $calendarScope,
+//                        onCalendarDay: { day, dayTasks in
+//                            if dayTasks.isEmpty { calendarAddDay = day; showCalendarAddConfirm = true }
+//                            else { calendarSheetDate = day; calendarDayTasks = dayTasks; showCalendarDayTasks = true }
+//                        },
+//                        onCategoryTap: { category in
+//                            withAnimation {
+//                                selectedCategory = category
+//                                currentView = category == .projects ? .projectDashboard : .categoryList
+//                            }
+//                        },
+//                        onAddTask: { pendingProjectForTask = nil; editingTask = nil; resetAddTaskForm(); withAnimation { showQuickAdd = true } },
+//                        onSearch: { showTaskSearch = true },
+//                        onNavigate: { navigateTo($0) }
+//                    )
+//                case .categoryList:
+//                    if let cat = selectedCategory {
+//                        CategoryListView(
+//                            category: cat, items: Array(items), sortOption: $sortOption,
+//                            appDetectionService: appDetectionService,
+//                            onBack: { withAnimation { currentView = .dashboard } },
+//                            onAddTask: {
+//                                pendingProjectForTask = nil; editingTask = nil; resetAddTaskForm()
+//                                inputCategory = cat; withAnimation { showQuickAdd = true }
+//                            },
+//                            onSelectTask: { selectedTask = $0 },
+//                            onTaskComplete: { item, loc in
+//                                if !item.completed { confettiOrigin = loc; showConfetti = true }
+//                                item.completed.toggle(); saveContext()
+//                            },
+//                            onNavigate: { navigateTo($0) }
+//                        )
+//                    }
+//                case .projectDashboard:
+//                    ProjectDashboardView(
+//                        items: Array(items), appDetectionService: appDetectionService,
+//                        onAddProject: { editingProject = nil; showProjectInfo = true },
+//                        onSelectProject: { proj in selectedProject = proj; withAnimation { currentView = .projectDetail } },
+//                        onSelectTask: { selectedTask = $0 },
+//                        onAddTask: { pendingProjectForTask = nil; editingTask = nil; resetAddTaskForm(); withAnimation { showQuickAdd = true } },
+//                        onSearch: { showTaskSearch = true }, onSort: {},
+//                        onBack: { withAnimation { currentView = .dashboard } },
+//                        onNavigate: { navigateTo($0) }
+//                    )
+//                    .environment(\.managedObjectContext, viewContext)
+//                case .projectDetail:
+//                    if let proj = selectedProject {
+//                        ProjectDetailView(
+//                            project: proj, appDetectionService: appDetectionService,
+//                            onBack: { withAnimation { currentView = .projectDashboard } },
+//                            onSelectTask: { selectedTask = $0 },
+//                            onAddTask: {
+//                                pendingProjectForTask = proj
+//                                editingTask = nil; resetAddTaskForm(); withAnimation { showQuickAdd = true }
+//                            },
+//                            onEditProject: { editingProject = proj; showProjectInfo = true },
+//                            onNavigate: { navigateTo($0) }
+//                        )
+//                        .environment(\.managedObjectContext, viewContext)
+//                    }
+//                case .addTask:
+//                    EmptyView()
+//                }
+//            }
+//            if showConfetti {
+//                ConfettiView(isFinished: $showConfetti, origin: confettiOrigin).allowsHitTesting(false)
+//            }
+//            if showQuickAdd {
+//                Rectangle().fill(.ultraThinMaterial.opacity(0.85)).background(Color.black.opacity(0.25))
+//                    .ignoresSafeArea().onTapGesture { showQuickAdd = false }
+//                QuickAddTaskView(
+//                    newTaskTitle: $newTaskTitle, selectedApp: $selectedApp,
+//                    showAppPicker: $showAppPicker, linkURL: $linkURL,
+//                    onAdd: { saveOrUpdateTask(); showQuickAdd = false },
+//                    onExpand: { showQuickAdd = false; withAnimation { currentView = .addTask } },
+//                    onCancel: { showQuickAdd = false; resetAddTaskForm() },
+//                    appDetectionService: appDetectionService
+//                )
+//                .transition(.scale.combined(with: .opacity)).zIndex(10)
+//            }
+//        }
+//        .sheet(isPresented: $showAppPicker) {
+//            AppPickerView(appDetectionService: appDetectionService, selectedApp: $selectedApp,
+//                          linkURL: linkBindingForSheet, isPresented: $showAppPicker)
+//        }
+//        .sheet(item: $selectedTask) { item in
+//            TaskDetailView(item: item, appDetectionService: appDetectionService, onEdit: {
+//                selectedTask = nil; populateFormFromItem(item); editingTask = item
+//                withAnimation { currentView = .addTask }
+//            })
+//        }
+//        .sheet(isPresented: Binding(get: { currentView == .addTask }, set: { if !$0 { currentView = .dashboard } })) {
+//            AddTaskView(
+//                newTaskTitle: $newTaskTitle, taskNotes: $taskNotes,
+//                inputCategory: $inputCategory, inputPriority: $inputPriority,
+//                taskDeadline: $taskDeadline, showAppPicker: $showAppPicker,
+//                showLinkInput: $showLinkInput, selectedApp: $selectedApp,
+//                linkURL: $linkURL, mainLinkBundleIdentifier: $mainLinkBundleIdentifier,
+//                subtaskDrafts: $subtaskDrafts, activeSubtaskID: $activeSubtaskID,
+//                isEditing: editingTask != nil, addTask: saveOrUpdateTask,
+//                cancelAction: { editingTask = nil; resetAddTaskForm(); currentView = .dashboard },
+//                appDetectionService: appDetectionService
+//            )
+//        }
+//        .sheet(isPresented: $showTaskSearch) {
+//            TaskSearchView(items: Array(items)) { item in
+//                showTaskSearch = false; DispatchQueue.main.async { selectedTask = item }
+//            }
+//        }
+//        .sheet(isPresented: $showCalendarDayTasks) {
+//            CalendarDayTasksSheet(date: calendarSheetDate, tasks: calendarDayTasks) { item in selectedTask = item }
+//        }
+//        .sheet(isPresented: $showProjectInfo) {
+//            ProjectInfoView(project: editingProject, appDetectionService: appDetectionService,
+//                            onSave: { showProjectInfo = false }, onCancel: { showProjectInfo = false })
+//            .environment(\.managedObjectContext, viewContext)
+//        }
+//        .onChange(of: selectedApp) { _, newApp in
+//            guard newApp != nil, activeSubtaskID == nil else { return }
+//            linkURL = ""; mainLinkBundleIdentifier = nil
+//        }
+//        .onChange(of: linkURL) { _, new in
+//            guard activeSubtaskID == nil, !new.isEmpty else { return }
+//            selectedApp = nil; mainLinkBundleIdentifier = nil
+//        }
+//        .onChange(of: showAppPicker) { _, open in if !open, selectedApp == nil { activeSubtaskID = nil } }
+//        .onChange(of: showLinkInput) { _, open in if !open { activeSubtaskID = nil } }
+//        .onReceive(timer) { _ in waterService.refreshCurrentIntake() }
+//        .confirmationDialog("Add a task for this day?", isPresented: $showCalendarAddConfirm, titleVisibility: .visible) {
+//            Button("Add Task") {
+//                if let d = calendarAddDay {
+//                    editingTask = nil; resetAddTaskForm()
+//                    taskDeadline = Calendar.current.startOfDay(for: d)
+//                    withAnimation { currentView = .addTask }
+//                }
+//                calendarAddDay = nil
+//            }
+//            Button("Cancel", role: .cancel) { calendarAddDay = nil }
+//        } message: {
+//            if let d = calendarAddDay { Text(DateFormatter.localizedString(from: d, dateStyle: .medium, timeStyle: .none)) }
+//        }
+//    }
+//    private func navigateTo(_ page: TBPage) {
+//        withAnimation {
+//            switch page {
+//            case .home:     currentView = .dashboard
+//            case .projects: currentView = .projectDashboard
+//            case .done:     selectedCategory = .allTasks; currentView = .categoryList
+//            default:
+//                if let cat = page.taskCategory { selectedCategory = cat; currentView = .categoryList }
+//            }
+//        }
+//    }
+//    private var linkBindingForSheet: Binding<String> {
+//        Binding(get: { linkURL }, set: { linkURL = $0 })
+//    }
+//    private func resetAddTaskForm() {
+//        newTaskTitle = ""; taskNotes = ""
+//        inputCategory = .allTasks; inputPriority = .low
+//        taskDeadline = nil; selectedApp = nil; linkURL = ""
+//        mainLinkBundleIdentifier = nil; subtaskDrafts = []; activeSubtaskID = nil
+//    }
+//    private func populateFormFromItem(_ item: Item) {
+//        newTaskTitle = item.title ?? ""; taskNotes = item.notes ?? ""
+//        inputCategory = TaskCategory(rawValue: item.category ?? "") ?? .today
+//        inputPriority = TaskPriority(rawValue: item.priority) ?? .low
+//        taskDeadline = item.deadline
+//        mainLinkBundleIdentifier = nil; selectedApp = nil; linkURL = ""
+//        if let type = item.linkedResourceType, let value = item.linkedResourceValue {
+//            if type == LinkedResourceType.app.rawValue {
+//                selectedApp = appDetectionService.installedApps.first { $0.id == value }
+//                if selectedApp == nil { mainLinkBundleIdentifier = value }
+//            } else { linkURL = value }
+//        }
+//        subtaskDrafts = ((item.subtasks as? Set<Subtask>) ?? [])
+//            .sorted { $0.sortOrder < $1.sortOrder }
+//            .map { SubtaskDraft(title: $0.linkedResourceValue ?? "") }
+//    }
+//    private func saveOrUpdateTask() {
+//        guard !newTaskTitle.isEmpty else { return }
+//        DispatchQueue.main.async {
+//            let item: Item
+//            if let editing = editingTask { item = editing }
+//            else { item = Item(context: viewContext); item.timestamp = Date(); item.completed = false }
+//            item.title = newTaskTitle
+//            item.notes = taskNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : taskNotes
+//            item.category = inputCategory.rawValue
+//            item.priority = inputPriority.rawValue
+//            item.deadline = taskDeadline
+//            if let proj = pendingProjectForTask { item.setValue(proj, forKey: "project") }
+//            if let app = selectedApp {
+//                item.linkedResourceType = LinkedResourceType.app.rawValue
+//                item.linkedResourceValue = app.id
+//                item.linkedResourceAppDisplayName = app.displayName
+//            } else if !linkURL.isEmpty {
+//                item.linkedResourceType = LinkedResourceType.url.rawValue
+//                item.linkedResourceValue = linkURL
+//                item.linkedResourceAppDisplayName = nil
+//            } else if let bid = mainLinkBundleIdentifier {
+//                item.linkedResourceType = LinkedResourceType.app.rawValue
+//                item.linkedResourceValue = bid
+//                item.linkedResourceAppDisplayName = nil
+//            } else {
+//                item.linkedResourceType = nil; item.linkedResourceValue = nil
+//                item.linkedResourceAppDisplayName = nil
+//            }
+//            if let existing = item.subtasks as? Set<Subtask> { existing.forEach { viewContext.delete($0) } }
+//            var order: Int16 = 0
+//            for draft in subtaskDrafts.prefix(10) {
+//                let sub = Subtask(context: viewContext)
+//                sub.parent = item; sub.sortOrder = order; order += 1
+//                sub.linkedResourceType = "Text"; sub.linkedResourceValue = draft.title
+//            }
+//            saveContext()
+//            withAnimation {
+//                editingTask = nil; pendingProjectForTask = nil; resetAddTaskForm()
+//                if currentView != .projectDetail && currentView != .projectDashboard {
+//                    selectedCategory = inputCategory; currentView = .categoryList
+//                }
+//            }
+//        }
+//    }
+//    private func saveContext() {
+//        do { try viewContext.save() } catch { print("CoreData error: \(error)"); viewContext.rollback() }
+//    }
+//}
+//
+//struct TaskRow: View {
+//    @ObservedObject var item: Item
+//    var onSelect: () -> Void
+//    var onComplete: (CGPoint) -> Void
+//    @ObservedObject var appDetectionService: AppDetectionService
+//    var isTemporarilyCompleted: Bool = false
+//    var body: some View {
+//        let isDone = item.completed || isTemporarilyCompleted
+//        return GeometryReader { geo in
+//            HStack {
+//                Button(action: {
+//                    let f = geo.frame(in: .global)
+//                    onComplete(CGPoint(x: f.minX + 20, y: f.midY))
+//                }) {
+//                    Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
+//                        .foregroundColor(isDone ? .green : .gray).font(.title3)
+//                }
+//                .buttonStyle(.plain)
+//                VStack(alignment: .leading, spacing: 2) {
+//                    HStack(spacing: 4) {
+//                        if item.priority > 0 { Circle().fill(pColor(item.priority)).frame(width: 6, height: 6) }
+//                        Text(item.title ?? "Untitled")
+//                            .font(.custom("Montserrat-SemiBold", size: 12)).strikethrough(isDone)
+//                    }
+//                    HStack(spacing: 6) {
+//                        if let dl = item.deadline {
+//                            Text(dl, style: .date).font(.custom("Montserrat-Regular", size: 10)).foregroundColor(.secondary)
+//                        }
+//                        SubtaskIndicator(item: item)
+//                    }
+//                }
+//                Spacer()
+//                if let type = item.linkedResourceType, let value = item.linkedResourceValue {
+//                    Button(action: {
+//                        if type == LinkedResourceType.app.rawValue { appDetectionService.launchApp(bundleIdentifier: value) }
+//                        else if let url = normalizedURL(from: value) { NSWorkspace.shared.open(url) }
+//                    }) {
+//                        if type == LinkedResourceType.app.rawValue, let icon = appDetectionService.getIcon(for: value) {
+//                            Image(nsImage: icon).resizable().frame(width: 20, height: 20)
+//                        } else { LinkIconView(link: value).frame(width: 20, height: 20) }
+//                    }
+//                    .buttonStyle(.plain).padding(.trailing, 4)
+//                }
+//                Button(action: onSelect) {
+//                    Image(systemName: "info.circle").font(.caption).foregroundColor(.secondary)
+//                }
+//                .buttonStyle(.plain)
+//            }
+//            .padding(.vertical, 4)
+//        }
+//        .frame(height: 40)
+//    }
+//    private func pColor(_ p: Int16) -> Color {
+//        switch p { case 1: return .orange; case 2: return .red; default: return .blue }
+//    }
+//}
+//
+//struct AppPickerView: View {
+//    @ObservedObject var appDetectionService: AppDetectionService
+//    @Binding var selectedApp: DetectedApp?
+//    @Binding var linkURL: String
+//    @Binding var isPresented: Bool
+//    @State private var searchText = ""
+//    @State private var tempURL = ""
+//    var body: some View {
+//        VStack(spacing: 12) {
+//            Text("Link App").font(.custom("Montserrat-Bold", size: 14)).padding(.top)
+//            VStack(alignment: .leading, spacing: 8) {
+//                Text("Paste a link").font(.custom("Montserrat-Regular", size: 12)).foregroundColor(.secondary)
+//                HStack {
+//                    TextField("https://...", text: $tempURL).textFieldStyle(RoundedBorderTextFieldStyle())
+//                    Button("Save") { linkURL = tempURL; isPresented = false }.buttonStyle(.borderedProminent)
+//                        .disabled(tempURL.trimmingCharacters(in: .whitespaces).isEmpty)
+//                }
+//            }
+//            .padding(.horizontal)
+//            Text("or").foregroundColor(.secondary).font(.custom("Montserrat-SemiBold", size: 13))
+//            TextField("Search apps...", text: $searchText).textFieldStyle(RoundedBorderTextFieldStyle()).padding(.horizontal)
+//            if appDetectionService.isLoading {
+//                Spacer(); ProgressView("Scanning apps…"); Spacer()
+//            } else {
+//                List(appDetectionService.installedApps.filter {
+//                    searchText.isEmpty || $0.displayName.localizedCaseInsensitiveContains(searchText)
+//                }) { app in
+//                    HStack {
+//                        Image(nsImage: app.icon).resizable().frame(width: 24, height: 24)
+//                        Text(app.displayName).font(.custom("Montserrat-Regular", size: 12)); Spacer()
+//                    }
+//                    .contentShape(Rectangle()).onTapGesture { selectedApp = app; isPresented = false }
+//                }
+//            }
+//            Button("Cancel") { isPresented = false }.padding(.bottom)
+//        }
+//        .background(AppColors.card).frame(width: 320, height: 400).onAppear { tempURL = linkURL }
+//    }
+//}
+//
+//struct TaskDetailView: View {
+//    @ObservedObject var item: Item
+//    @ObservedObject var appDetectionService: AppDetectionService
+//    @Environment(\.dismiss) var dismiss
+//    var onEdit: () -> Void
+//    private var sortedSubtasks: [Subtask] {
+//        ((item.subtasks as? Set<Subtask>) ?? []).sorted { $0.sortOrder < $1.sortOrder }
+//    }
+//    var body: some View {
+//        ScrollView {
+//            VStack(alignment: .leading, spacing: 16) {
+//                HStack {
+//                    Text(item.category ?? "Task").font(.custom("Montserrat-Regular", size: 11))
+//                        .padding(4).background(Color.blue.opacity(0.1)).cornerRadius(4)
+//                    Spacer()
+//                    Button("Edit") { onEdit() }.buttonStyle(.plain)
+//                    Button("Close") { dismiss() }.buttonStyle(.plain)
+//                }
+//                Text(item.title ?? "Untitled").font(.custom("Montserrat-Bold", size: 18))
+//                if let notes = item.notes, !notes.isEmpty {
+//                    RichTextEditor(text: .constant(notes)).frame(minHeight: 60, maxHeight: 120)
+//                        .padding(6).background(Color.Surface.a10.opacity(0.5)).cornerRadius(8)
+//                }
+//                if let dl = item.deadline {
+//                    Label("Deadline: \(dl, style: .date)", systemImage: "calendar").foregroundColor(.secondary)
+//                }
+//                if !sortedSubtasks.isEmpty {
+//                    Divider()
+//                    Text("Subtasks").font(.custom("Montserrat-Bold", size: 14))
+//                    ForEach(sortedSubtasks) { sub in
+//                        HStack {
+//                            Image(systemName: "circle").font(.caption).foregroundColor(.secondary)
+//                            Text(sub.linkedResourceValue ?? "").font(.custom("Montserrat-Regular", size: 13))
+//                        }.padding(.vertical, 2)
+//                    }
+//                }
+//                if let type = item.linkedResourceType, let value = item.linkedResourceValue {
+//                    Button(action: {
+//                        if type == LinkedResourceType.app.rawValue { appDetectionService.launchApp(bundleIdentifier: value) }
+//                        else if let url = normalizedURL(from: value) { NSWorkspace.shared.open(url) }
+//                    }) {
+//                        HStack {
+//                            if type == LinkedResourceType.app.rawValue, let icon = appDetectionService.getIcon(for: value) {
+//                                Image(nsImage: icon).resizable().frame(width: 32, height: 32)
+//                                Text("Open \(item.linkedResourceAppDisplayName ?? "App")")
+//                            } else { LinkIconView(link: value).frame(width: 32, height: 32); Text("Open Link") }
+//                        }
+//                        .padding().frame(maxWidth: .infinity).background(Color.blue.opacity(0.1)).cornerRadius(8)
+//                    }
+//                    .buttonStyle(.plain)
+//                }
+//            }.padding()
+//        }
+//        .frame(minWidth: 350, minHeight: 280).background(AppColors.card)
+//    }
+//}
 
 import SwiftUI
 import CoreData
 import AppKit
+
+// MARK: - Confetti
 
 struct ConfettiPiece: Identifiable {
     let id = UUID()
@@ -798,8 +1274,7 @@ struct ConfettiView: View {
     private func createExplosion() {
         let colors: [Color] = [.red,.blue,.green,.yellow,.pink,.purple,.orange,.cyan,.mint]
         for _ in 0..<50 {
-            let a = Double.random(in: -.pi*0.75 ... -.pi*0.25)
-            let s = Double.random(in: 4...12)
+            let a = Double.random(in: -.pi*0.75 ... -.pi*0.25); let s = Double.random(in: 4...12)
             pieces.append(ConfettiPiece(x: origin.x, y: origin.y, vx: CGFloat(cos(a)*s), vy: CGFloat(sin(a)*s),
                 color: colors.randomElement() ?? .blue, size: .random(in: 4...10), rotation: .random(in: 0...360), opacity: 1))
         }
@@ -814,6 +1289,8 @@ struct ConfettiView: View {
     }
 }
 
+// MARK: - ContentView
+
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject private var appDetectionService = AppDetectionService()
@@ -821,13 +1298,19 @@ struct ContentView: View {
     private var items: FetchedResults<Item>
     @StateObject private var waterService: WaterIntakeService
     private let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+
     init() {
         _waterService = StateObject(wrappedValue: WaterIntakeService(context: PersistenceController.shared.container.viewContext))
     }
+
+    // MARK: - Navigation state
     @State private var currentView: AppView = .dashboard
     @State private var selectedCategory: TaskCategory? = nil
     @State private var selectedProject: Project? = nil
+    @State private var selectedGoal: Goal? = nil
     @State private var pendingProjectForTask: Project? = nil
+
+    // MARK: - Overlays / sheets
     @State private var showConfetti = false
     @State private var confettiOrigin: CGPoint = .zero
     @State private var selectedTask: Item? = nil
@@ -840,6 +1323,11 @@ struct ContentView: View {
     @State private var showCalendarAddConfirm = false
     @State private var showProjectInfo = false
     @State private var editingProject: Project? = nil
+    @State private var showGoalInfo = false
+    @State private var editingGoal: Goal? = nil
+    @State private var showBatchFocus = false
+
+    // MARK: - Task form state
     @State private var newTaskTitle = ""
     @State private var taskNotes = ""
     @State private var inputCategory: TaskCategory = .today
@@ -855,15 +1343,33 @@ struct ContentView: View {
     @State private var editingTask: Item? = nil
     @State private var showQuickAdd = false
     @State private var sortOption: TaskSortOption = .timestamp
-    enum AppView { case dashboard, categoryList, projectDashboard, projectDetail, addTask }
+
+    // MARK: - App view enum
+    enum AppView {
+        case dashboard
+        case today
+        case categoryList
+        case projectDashboard
+        case projectDetail
+        case goalsDashboard
+        case goalDetail
+        case addTask
+    }
+
+    // MARK: - Body
+
     var body: some View {
         ZStack {
             AppColors.background.ignoresSafeArea()
             VStack(spacing: 0) {
                 switch currentView {
+
+                // ── Main Dashboard ───────────────────────────────────────────
                 case .dashboard:
                     DashboardView(
-                        waterService: waterService, items: Array(items), calendarScope: $calendarScope,
+                        waterService: waterService,
+                        items: Array(items),
+                        calendarScope: $calendarScope,
                         onCalendarDay: { day, dayTasks in
                             if dayTasks.isEmpty { calendarAddDay = day; showCalendarAddConfirm = true }
                             else { calendarSheetDate = day; calendarDayTasks = dayTasks; showCalendarDayTasks = true }
@@ -871,17 +1377,43 @@ struct ContentView: View {
                         onCategoryTap: { category in
                             withAnimation {
                                 selectedCategory = category
-                                currentView = category == .projects ? .projectDashboard : .categoryList
+                                switch category {
+                                case .projects: currentView = .projectDashboard
+                                case .today:    currentView = .today
+                                case .goals:    currentView = .goalsDashboard
+                                default:        currentView = .categoryList
+                                }
                             }
                         },
                         onAddTask: { pendingProjectForTask = nil; editingTask = nil; resetAddTaskForm(); withAnimation { showQuickAdd = true } },
                         onSearch: { showTaskSearch = true },
                         onNavigate: { navigateTo($0) }
                     )
+
+                // ── Today View ───────────────────────────────────────────────
+                case .today:
+                    TodayView(
+                        appDetectionService: appDetectionService,
+                        waterService: waterService,
+                        onSelectTask: { selectedTask = $0 },
+                        onAddTask: {
+                            pendingProjectForTask = nil; editingTask = nil; resetAddTaskForm()
+                            inputCategory = .today; withAnimation { showQuickAdd = true }
+                        },
+                        onSearch: { showTaskSearch = true },
+                        onNavigate: { navigateTo($0) },
+                        onBatchFocus: { showBatchFocus = true },
+                        allItems: Array(items)
+                    )
+                    .environment(\.managedObjectContext, viewContext)
+
+                // ── Category List ────────────────────────────────────────────
                 case .categoryList:
                     if let cat = selectedCategory {
                         CategoryListView(
-                            category: cat, items: Array(items), sortOption: $sortOption,
+                            category: cat,
+                            items: Array(items),
+                            sortOption: $sortOption,
                             appDetectionService: appDetectionService,
                             onBack: { withAnimation { currentView = .dashboard } },
                             onAddTask: {
@@ -896,40 +1428,83 @@ struct ContentView: View {
                             onNavigate: { navigateTo($0) }
                         )
                     }
+
+                // ── Project Dashboard ────────────────────────────────────────
                 case .projectDashboard:
                     ProjectDashboardView(
-                        items: Array(items), appDetectionService: appDetectionService,
+                        items: Array(items),
+                        appDetectionService: appDetectionService,
                         onAddProject: { editingProject = nil; showProjectInfo = true },
                         onSelectProject: { proj in selectedProject = proj; withAnimation { currentView = .projectDetail } },
                         onSelectTask: { selectedTask = $0 },
                         onAddTask: { pendingProjectForTask = nil; editingTask = nil; resetAddTaskForm(); withAnimation { showQuickAdd = true } },
-                        onSearch: { showTaskSearch = true }, onSort: {},
+                        onSearch: { showTaskSearch = true },
+                        onSort: {},
                         onBack: { withAnimation { currentView = .dashboard } },
                         onNavigate: { navigateTo($0) }
                     )
                     .environment(\.managedObjectContext, viewContext)
+
+                // ── Project Detail ───────────────────────────────────────────
                 case .projectDetail:
                     if let proj = selectedProject {
                         ProjectDetailView(
-                            project: proj, appDetectionService: appDetectionService,
+                            project: proj,
+                            appDetectionService: appDetectionService,
                             onBack: { withAnimation { currentView = .projectDashboard } },
                             onSelectTask: { selectedTask = $0 },
                             onAddTask: {
-                                pendingProjectForTask = proj
-                                editingTask = nil; resetAddTaskForm(); withAnimation { showQuickAdd = true }
+                                pendingProjectForTask = proj; editingTask = nil; resetAddTaskForm()
+                                withAnimation { showQuickAdd = true }
                             },
                             onEditProject: { editingProject = proj; showProjectInfo = true },
                             onNavigate: { navigateTo($0) }
                         )
                         .environment(\.managedObjectContext, viewContext)
                     }
+
+                // ── Goals Dashboard ──────────────────────────────────────────
+                case .goalsDashboard:
+                    GoalsDashboardView(
+                        onSelectGoal: { goal in selectedGoal = goal; withAnimation { currentView = .goalDetail } },
+                        onAddGoal: { editingGoal = nil; showGoalInfo = true },
+                        onBack: { withAnimation { currentView = .dashboard } },
+                        onNavigate: { navigateTo($0) }
+                    )
+                    .environment(\.managedObjectContext, viewContext)
+
+                // ── Goal Detail ──────────────────────────────────────────────
+                case .goalDetail:
+                    if let goal = selectedGoal {
+                        GoalDetailView(
+                            goal: goal,
+                            allGoals: fetchAllGoals(),
+                            appDetectionService: appDetectionService,
+                            onBack: { withAnimation { currentView = .goalsDashboard } },
+                            onSelectGoal: { g in selectedGoal = g },
+                            onSelectTask: { selectedTask = $0 },
+                            onAddTask: {
+                                pendingProjectForTask = nil; editingTask = nil; resetAddTaskForm()
+                                inputCategory = .goals; withAnimation { showQuickAdd = true }
+                            },
+                            onEditGoal: { editingGoal = goal; showGoalInfo = true },
+                            onNavigate: { navigateTo($0) }
+                        )
+                        .environment(\.managedObjectContext, viewContext)
+                    }
+
+                // ── Add Task (sheet-driven) ───────────────────────────────────
                 case .addTask:
                     EmptyView()
                 }
             }
+
+            // Confetti
             if showConfetti {
                 ConfettiView(isFinished: $showConfetti, origin: confettiOrigin).allowsHitTesting(false)
             }
+
+            // Quick-add overlay
             if showQuickAdd {
                 Rectangle().fill(.ultraThinMaterial.opacity(0.85)).background(Color.black.opacity(0.25))
                     .ignoresSafeArea().onTapGesture { showQuickAdd = false }
@@ -944,6 +1519,9 @@ struct ContentView: View {
                 .transition(.scale.combined(with: .opacity)).zIndex(10)
             }
         }
+
+        // MARK: - Sheets
+
         .sheet(isPresented: $showAppPicker) {
             AppPickerView(appDetectionService: appDetectionService, selectedApp: $selectedApp,
                           linkURL: linkBindingForSheet, isPresented: $showAppPicker)
@@ -980,6 +1558,18 @@ struct ContentView: View {
                             onSave: { showProjectInfo = false }, onCancel: { showProjectInfo = false })
             .environment(\.managedObjectContext, viewContext)
         }
+        .sheet(isPresented: $showGoalInfo) {
+            // Placeholder — replace with GoalInfoView when you build it
+            Text("Goal info / edit coming soon")
+                .font(.custom("Montserrat-Regular", size: 13))
+                .foregroundColor(AppColors.textWhite)
+                .frame(width: 330, height: 200)
+                .background(AppColors.background)
+        }
+        .sheet(isPresented: $showBatchFocus) {
+            BatchProductivityEntryView(items: Array(items), appDetectionService: appDetectionService)
+                .environment(\.managedObjectContext, viewContext)
+        }
         .onChange(of: selectedApp) { _, newApp in
             guard newApp != nil, activeSubtaskID == nil else { return }
             linkURL = ""; mainLinkBundleIdentifier = nil
@@ -1002,29 +1592,47 @@ struct ContentView: View {
             }
             Button("Cancel", role: .cancel) { calendarAddDay = nil }
         } message: {
-            if let d = calendarAddDay { Text(DateFormatter.localizedString(from: d, dateStyle: .medium, timeStyle: .none)) }
+            if let d = calendarAddDay {
+                Text(DateFormatter.localizedString(from: d, dateStyle: .medium, timeStyle: .none))
+            }
         }
     }
+
+    // MARK: - Navigation drawer routing
+
     private func navigateTo(_ page: TBPage) {
         withAnimation {
             switch page {
             case .home:     currentView = .dashboard
+            case .today:    currentView = .today
             case .projects: currentView = .projectDashboard
+            case .goals:    currentView = .goalsDashboard
             case .done:     selectedCategory = .allTasks; currentView = .categoryList
             default:
                 if let cat = page.taskCategory { selectedCategory = cat; currentView = .categoryList }
             }
         }
     }
+
+    // MARK: - Helpers
+
+    private func fetchAllGoals() -> [Goal] {
+        let req = NSFetchRequest<Goal>(entityName: "Goal")
+        req.sortDescriptors = [NSSortDescriptor(keyPath: \Goal.timestamp, ascending: false)]
+        return (try? viewContext.fetch(req)) ?? []
+    }
+
     private var linkBindingForSheet: Binding<String> {
         Binding(get: { linkURL }, set: { linkURL = $0 })
     }
+
     private func resetAddTaskForm() {
         newTaskTitle = ""; taskNotes = ""
         inputCategory = .allTasks; inputPriority = .low
         taskDeadline = nil; selectedApp = nil; linkURL = ""
         mainLinkBundleIdentifier = nil; subtaskDrafts = []; activeSubtaskID = nil
     }
+
     private func populateFormFromItem(_ item: Item) {
         newTaskTitle = item.title ?? ""; taskNotes = item.notes ?? ""
         inputCategory = TaskCategory(rawValue: item.category ?? "") ?? .today
@@ -1041,18 +1649,22 @@ struct ContentView: View {
             .sorted { $0.sortOrder < $1.sortOrder }
             .map { SubtaskDraft(title: $0.linkedResourceValue ?? "") }
     }
+
     private func saveOrUpdateTask() {
         guard !newTaskTitle.isEmpty else { return }
         DispatchQueue.main.async {
             let item: Item
             if let editing = editingTask { item = editing }
             else { item = Item(context: viewContext); item.timestamp = Date(); item.completed = false }
+
             item.title = newTaskTitle
             item.notes = taskNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : taskNotes
             item.category = inputCategory.rawValue
             item.priority = inputPriority.rawValue
             item.deadline = taskDeadline
+
             if let proj = pendingProjectForTask { item.setValue(proj, forKey: "project") }
+
             if let app = selectedApp {
                 item.linkedResourceType = LinkedResourceType.app.rawValue
                 item.linkedResourceValue = app.id
@@ -1069,6 +1681,7 @@ struct ContentView: View {
                 item.linkedResourceType = nil; item.linkedResourceValue = nil
                 item.linkedResourceAppDisplayName = nil
             }
+
             if let existing = item.subtasks as? Set<Subtask> { existing.forEach { viewContext.delete($0) } }
             var order: Int16 = 0
             for draft in subtaskDrafts.prefix(10) {
@@ -1079,16 +1692,122 @@ struct ContentView: View {
             saveContext()
             withAnimation {
                 editingTask = nil; pendingProjectForTask = nil; resetAddTaskForm()
-                if currentView != .projectDetail && currentView != .projectDashboard {
+                if currentView != .projectDetail && currentView != .projectDashboard
+                    && currentView != .goalDetail && currentView != .today {
                     selectedCategory = inputCategory; currentView = .categoryList
                 }
             }
         }
     }
+
     private func saveContext() {
-        do { try viewContext.save() } catch { print("CoreData error: \(error)"); viewContext.rollback() }
+        do { try viewContext.save() } catch {
+            print("CoreData error: \(error)"); viewContext.rollback()
+        }
     }
 }
+
+// MARK: - AppPickerView
+
+struct AppPickerView: View {
+    @ObservedObject var appDetectionService: AppDetectionService
+    @Binding var selectedApp: DetectedApp?
+    @Binding var linkURL: String
+    @Binding var isPresented: Bool
+    @State private var searchText = ""; @State private var tempURL = ""
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Link App").font(.custom("Montserrat-Bold", size: 14)).padding(.top)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Paste a link").font(.custom("Montserrat-Regular", size: 12)).foregroundColor(.secondary)
+                HStack {
+                    TextField("https://...", text: $tempURL).textFieldStyle(RoundedBorderTextFieldStyle())
+                    Button("Save") { linkURL = tempURL; isPresented = false }.buttonStyle(.borderedProminent)
+                        .disabled(tempURL.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }.padding(.horizontal)
+            Text("or").foregroundColor(.secondary).font(.custom("Montserrat-SemiBold", size: 13))
+            TextField("Search apps...", text: $searchText).textFieldStyle(RoundedBorderTextFieldStyle()).padding(.horizontal)
+            if appDetectionService.isLoading {
+                Spacer(); ProgressView("Scanning apps…"); Spacer()
+            } else {
+                List(appDetectionService.installedApps.filter {
+                    searchText.isEmpty || $0.displayName.localizedCaseInsensitiveContains(searchText)
+                }) { app in
+                    HStack {
+                        Image(nsImage: app.icon).resizable().frame(width: 24, height: 24)
+                        Text(app.displayName).font(.custom("Montserrat-Regular", size: 12)); Spacer()
+                    }
+                    .contentShape(Rectangle()).onTapGesture { selectedApp = app; isPresented = false }
+                }
+            }
+            Button("Cancel") { isPresented = false }.padding(.bottom)
+        }
+        .background(AppColors.card).frame(width: 320, height: 400).onAppear { tempURL = linkURL }
+    }
+}
+
+// MARK: - TaskDetailView
+
+struct TaskDetailView: View {
+    @ObservedObject var item: Item
+    @ObservedObject var appDetectionService: AppDetectionService
+    @Environment(\.dismiss) var dismiss
+    var onEdit: () -> Void
+    private var sortedSubtasks: [Subtask] {
+        ((item.subtasks as? Set<Subtask>) ?? []).sorted { $0.sortOrder < $1.sortOrder }
+    }
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Text(item.category ?? "Task").font(.custom("Montserrat-Regular", size: 11))
+                        .padding(4).background(Color.blue.opacity(0.1)).cornerRadius(4)
+                    Spacer()
+                    Button("Edit") { onEdit() }.buttonStyle(.plain)
+                    Button("Close") { dismiss() }.buttonStyle(.plain)
+                }
+                Text(item.title ?? "Untitled").font(.custom("Montserrat-Bold", size: 18))
+                if let notes = item.notes, !notes.isEmpty {
+                    RichTextEditor(text: .constant(notes)).frame(minHeight: 60, maxHeight: 120)
+                        .padding(6).background(Color.Surface.a10.opacity(0.5)).cornerRadius(8)
+                }
+                if let dl = item.deadline {
+                    Label("Deadline: \(dl, style: .date)", systemImage: "calendar").foregroundColor(.secondary)
+                }
+                if !sortedSubtasks.isEmpty {
+                    Divider()
+                    Text("Subtasks").font(.custom("Montserrat-Bold", size: 14))
+                    ForEach(sortedSubtasks) { sub in
+                        HStack {
+                            Image(systemName: "circle").font(.caption).foregroundColor(.secondary)
+                            Text(sub.linkedResourceValue ?? "").font(.custom("Montserrat-Regular", size: 13))
+                        }.padding(.vertical, 2)
+                    }
+                }
+                if let type = item.linkedResourceType, let value = item.linkedResourceValue {
+                    Button(action: {
+                        if type == LinkedResourceType.app.rawValue { appDetectionService.launchApp(bundleIdentifier: value) }
+                        else if let url = normalizedURL(from: value) { NSWorkspace.shared.open(url) }
+                    }) {
+                        HStack {
+                            if type == LinkedResourceType.app.rawValue,
+                               let icon = appDetectionService.getIcon(for: value) {
+                                Image(nsImage: icon).resizable().frame(width: 32, height: 32)
+                                Text("Open \(item.linkedResourceAppDisplayName ?? "App")")
+                            } else { LinkIconView(link: value).frame(width: 32, height: 32); Text("Open Link") }
+                        }
+                        .padding().frame(maxWidth: .infinity).background(Color.blue.opacity(0.1)).cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }.padding()
+        }
+        .frame(minWidth: 350, minHeight: 280).background(AppColors.card)
+    }
+}
+
+// MARK: - TaskRow (legacy — used by CategoryListView until fully replaced by TBTaskRow)
 
 struct TaskRow: View {
     @ObservedObject var item: Item
@@ -1144,102 +1863,5 @@ struct TaskRow: View {
     }
     private func pColor(_ p: Int16) -> Color {
         switch p { case 1: return .orange; case 2: return .red; default: return .blue }
-    }
-}
-
-struct AppPickerView: View {
-    @ObservedObject var appDetectionService: AppDetectionService
-    @Binding var selectedApp: DetectedApp?
-    @Binding var linkURL: String
-    @Binding var isPresented: Bool
-    @State private var searchText = ""
-    @State private var tempURL = ""
-    var body: some View {
-        VStack(spacing: 12) {
-            Text("Link App").font(.custom("Montserrat-Bold", size: 14)).padding(.top)
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Paste a link").font(.custom("Montserrat-Regular", size: 12)).foregroundColor(.secondary)
-                HStack {
-                    TextField("https://...", text: $tempURL).textFieldStyle(RoundedBorderTextFieldStyle())
-                    Button("Save") { linkURL = tempURL; isPresented = false }.buttonStyle(.borderedProminent)
-                        .disabled(tempURL.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
-            .padding(.horizontal)
-            Text("or").foregroundColor(.secondary).font(.custom("Montserrat-SemiBold", size: 13))
-            TextField("Search apps...", text: $searchText).textFieldStyle(RoundedBorderTextFieldStyle()).padding(.horizontal)
-            if appDetectionService.isLoading {
-                Spacer(); ProgressView("Scanning apps…"); Spacer()
-            } else {
-                List(appDetectionService.installedApps.filter {
-                    searchText.isEmpty || $0.displayName.localizedCaseInsensitiveContains(searchText)
-                }) { app in
-                    HStack {
-                        Image(nsImage: app.icon).resizable().frame(width: 24, height: 24)
-                        Text(app.displayName).font(.custom("Montserrat-Regular", size: 12)); Spacer()
-                    }
-                    .contentShape(Rectangle()).onTapGesture { selectedApp = app; isPresented = false }
-                }
-            }
-            Button("Cancel") { isPresented = false }.padding(.bottom)
-        }
-        .background(AppColors.card).frame(width: 320, height: 400).onAppear { tempURL = linkURL }
-    }
-}
-
-struct TaskDetailView: View {
-    @ObservedObject var item: Item
-    @ObservedObject var appDetectionService: AppDetectionService
-    @Environment(\.dismiss) var dismiss
-    var onEdit: () -> Void
-    private var sortedSubtasks: [Subtask] {
-        ((item.subtasks as? Set<Subtask>) ?? []).sorted { $0.sortOrder < $1.sortOrder }
-    }
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Text(item.category ?? "Task").font(.custom("Montserrat-Regular", size: 11))
-                        .padding(4).background(Color.blue.opacity(0.1)).cornerRadius(4)
-                    Spacer()
-                    Button("Edit") { onEdit() }.buttonStyle(.plain)
-                    Button("Close") { dismiss() }.buttonStyle(.plain)
-                }
-                Text(item.title ?? "Untitled").font(.custom("Montserrat-Bold", size: 18))
-                if let notes = item.notes, !notes.isEmpty {
-                    RichTextEditor(text: .constant(notes)).frame(minHeight: 60, maxHeight: 120)
-                        .padding(6).background(Color.Surface.a10.opacity(0.5)).cornerRadius(8)
-                }
-                if let dl = item.deadline {
-                    Label("Deadline: \(dl, style: .date)", systemImage: "calendar").foregroundColor(.secondary)
-                }
-                if !sortedSubtasks.isEmpty {
-                    Divider()
-                    Text("Subtasks").font(.custom("Montserrat-Bold", size: 14))
-                    ForEach(sortedSubtasks) { sub in
-                        HStack {
-                            Image(systemName: "circle").font(.caption).foregroundColor(.secondary)
-                            Text(sub.linkedResourceValue ?? "").font(.custom("Montserrat-Regular", size: 13))
-                        }.padding(.vertical, 2)
-                    }
-                }
-                if let type = item.linkedResourceType, let value = item.linkedResourceValue {
-                    Button(action: {
-                        if type == LinkedResourceType.app.rawValue { appDetectionService.launchApp(bundleIdentifier: value) }
-                        else if let url = normalizedURL(from: value) { NSWorkspace.shared.open(url) }
-                    }) {
-                        HStack {
-                            if type == LinkedResourceType.app.rawValue, let icon = appDetectionService.getIcon(for: value) {
-                                Image(nsImage: icon).resizable().frame(width: 32, height: 32)
-                                Text("Open \(item.linkedResourceAppDisplayName ?? "App")")
-                            } else { LinkIconView(link: value).frame(width: 32, height: 32); Text("Open Link") }
-                        }
-                        .padding().frame(maxWidth: .infinity).background(Color.blue.opacity(0.1)).cornerRadius(8)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }.padding()
-        }
-        .frame(minWidth: 350, minHeight: 280).background(AppColors.card)
     }
 }

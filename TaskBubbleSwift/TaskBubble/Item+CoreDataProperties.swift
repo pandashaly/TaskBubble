@@ -1,3 +1,14 @@
+// Item+CoreDataProperties.swift
+// TaskBubble
+//
+// ⚠️ Also update TaskBubble.xcdatamodeld to add:
+//   todayDate   Date        optional
+//   todayOrder  Integer 32  optional, default 0
+//   goal        Relationship → Goal (To-One, optional, Nullify)
+// Item+CoreDataProperties.swift
+// TaskBubble
+//
+
 import Foundation
 import CoreData
 
@@ -19,7 +30,9 @@ extension Item {
     @NSManaged public var notes: String?
     @NSManaged public var subtasks: NSSet?
 
+    // Today view
+    @NSManaged public var todayDate: Date?
+    @NSManaged public var todayOrder: Int32
 }
 
-extension Item: Identifiable {
-}
+extension Item: Identifiable {}
